@@ -3,12 +3,10 @@ import { prisma, safeJson } from "@/lib/prisma";
 
 export async function GET(
   _req: Request,
-  ctx: { params: Promise<{ communityId: string }> }
+  ctx: { params: { communityId: string } }
 ) {
-  const routeParams = await ctx.params;
-
   try {
-    const { communityId } = routeParams;
+    const { communityId } = ctx.params;
 
     // Fetch members, their user, and their allocations
     const members = await prisma.member.findMany({

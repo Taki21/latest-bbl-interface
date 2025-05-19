@@ -3,14 +3,12 @@ import { prisma, safeJson } from "@/lib/prisma";
 
 export async function GET(
   req: Request,
-  { params }: { params: Promise<{ communityId: string }> }
+  { params }: { params: { communityId: string } }
 ) {
-  const routeParams = await params;
-
   try {
     // Fetch raw projects with the teamLeader relation
     const raw = await prisma.project.findMany({
-      where: { communityId: routeParams.communityId },
+      where: { communityId: params.communityId },
       include: {
         teamLeader: {
           include: {

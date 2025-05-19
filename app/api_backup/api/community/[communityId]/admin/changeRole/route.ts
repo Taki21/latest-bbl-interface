@@ -4,10 +4,8 @@ import { MemberRole } from "@prisma/client";
 
 export async function POST(
   req: Request,
-  ctx: { params: Promise<{ communityId: string }> }
+  ctx: { params: { communityId: string } }
 ) {
-  const routeParams = await ctx.params;
-
   try {
     const { memberId, newRole, address } = await req.json();
     if (!memberId || !newRole || !address) {
@@ -17,7 +15,7 @@ export async function POST(
     // Only Owner or Professor can change roles
     const caller = await prisma.member.findFirst({
       where: {
-        communityId: routeParams.communityId,
+        communityId: ctx.params.communityId,
         user: { address },
       },
       select: { role: true },
@@ -37,7 +35,7 @@ export async function POST(
     });
     if (
       !target ||
-      target.communityId !== routeParams.communityId ||
+      target.communityId !== ctx.params.communityId ||
       target.user.address.toLowerCase() === address.toLowerCase()
     ) {
       return NextResponse.json(

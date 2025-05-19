@@ -5,10 +5,8 @@ const prisma = new PrismaClient();
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ communityId: string }> }
+  { params }: { params: { communityId: string } }
 ) {
-  const routeParams = await params;
-
   try {
     const { communityId } = params;
     const { project } = await request.json();

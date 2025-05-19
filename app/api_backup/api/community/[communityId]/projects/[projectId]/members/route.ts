@@ -5,10 +5,8 @@ const prisma = new PrismaClient();
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ communityId: string, projectId: string }> }
+  { params }: { params: { communityId: string, projectId: string } }
 ) {
-  const routeParams = await params;
-
   try {
     const { communityId, projectId } = params;
 
@@ -19,32 +17,25 @@ export async function GET(
       );
     }
 
-    const tasks = await prisma.task.findMany({
-      where: { 
-        projectId,
-        project: {
-          communityId
+    const members = await prisma.member.findMany({
+      where: {
+        projects: {
+          some: {
+            id: projectId,
+            communityId
+          }
         }
       },
       include: {
-        members: {
-          include: {
-            user: true
-          }
-        },
-        creator: {
-          include: {
-            user: true
-          }
-        }
+        user: true
       }
     });
 
-    return NextResponse.json(tasks);
+    return NextResponse.json(members);
   } catch (error) {
-    console.error('Error fetching project tasks:', error);
+    console.error('Error fetching project members:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch project tasks' },
+      { error: 'Failed to fetch project members' },
       { status: 500 }
     );
   }

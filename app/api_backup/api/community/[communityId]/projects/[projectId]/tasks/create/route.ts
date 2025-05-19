@@ -4,10 +4,8 @@ import { MemberRole } from "@prisma/client";
 
 export async function POST(
   req: Request,
-  ctx: { params: Promise<{ communityId: string; projectId: string }> }
+  ctx: { params: { communityId: string; projectId: string } }
 ) {
-  const routeParams = await ctx.params;
-
   try {
     const {
       name,
@@ -25,8 +23,8 @@ export async function POST(
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    const communityId = routeParams.communityId;
-    const projectId = routeParams.projectId;
+    const communityId = ctx.params.communityId;
+    const projectId = ctx.params.projectId;
     const allocation = BigInt(balance);
     const allocationStr = allocation.toString();
 

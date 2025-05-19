@@ -4,10 +4,8 @@ import { MemberRole } from "@prisma/client";
 
 export async function POST(
   req: Request,
-  ctx: { params: Promise<{ communityId: string }> }
+  ctx: { params: { communityId: string } }
 ) {
-  const routeParams = await ctx.params;
-
   try {
     const { amount, address } = await req.json(); // amount = whole tokens
     if (!amount || !address) {
@@ -18,7 +16,7 @@ export async function POST(
 
     // Caller must be Owner
     const member = await prisma.member.findFirst({
-      where: { communityId: routeParams.communityId, user: { address } },
+      where: { communityId: ctx.params.communityId, user: { address } },
       select: { role: true },
     });
     if (!member || member.role !== MemberRole.Owner) {
@@ -27,7 +25,7 @@ export async function POST(
 
     // Increment community balance
     const community = await prisma.community.update({
-      where: { id: routeParams.communityId },
+      where: { id: ctx.params.communityId },
       data: { balance: { increment: valueStr } },
       select: { id: true, balance: true },
     });

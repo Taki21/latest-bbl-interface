@@ -3,10 +3,8 @@ import { prisma, safeJson } from "@/lib/prisma";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ communityId: string }> }
+  { params }: { params: { communityId: string } }
 ) {
-  const routeParams = await params;
-
   try {
     const { communityId } = params;
 
