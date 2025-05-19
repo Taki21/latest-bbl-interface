@@ -1,0 +1,189 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/* ───────────── ENUMS ───────────── */
+
+enum MemberRole {
+  Owner        @map("Owner")
+  Professor    @map("Professor")
+  Team_Leader  @map("Team Leader")
+  Default      @map("Default")
+}
+
+enum TaskStatus {
+  not_started  @map("not-started")
+  in_progress  @map("in-progress")
+  under_review @map("under-review")
+  completed
+}
+
+enum TaskPriority {
+  low
+  medium
+  high
+}
+
+enum ProjectStatus {
+  active
+  completed
+  on_hold     @map("on-hold")
+}
+
+/* ───────────── MODELS ───────────── */
+
+model User {
+  id          String      @id @default(uuid())
+  name        String
+  email       String      @unique
+  address   String   @unique
+  balance     BigInt
+
+  /* one-to-many */
+  tasks       Task[]      @relation("UserTasks")
+  projects    Project[]   @relation("UserProjects")
+
+  /* communities this user CREATED (owner) */
+  communities Community[] @relation("CreatorCommunities")
+
+  /* communities this user BELONGS to (via Member) */
+  members     Member[]    @relation("UserMembers")
+
+  createdAt   String?
+  updatedAt   String?
+}
+
+/* ═══════════ COMMUNITY & MEMBER ═══════════ */
+
+model Community {
+  id               String     @id @default(uuid())
+  joinCode         String?    @unique
+  name             String
+  description      String
+  affiliation      String
+
+  /* FK → User (creator) */
+  creatorId        String
+  creator          User       @relation("CreatorCommunities", fields: [creatorId], references: [id])
+
+  newMemberReward  Int
+  referralReward   Int
+  tokenAddress     String?
+  tokenName        String
+  tokenSymbol      String
+  balance          BigInt
+
+  members          Member[]
+  projects         Project[]  @relation("CommunityProjects")
+  allocations      Allocation[] @relation("CommunityAllocations")
+
+  createdAt        String?
+  updatedAt        String?
+}
+
+model Member {
+  id           String     @id @default(uuid())
+
+  /* FK → User */
+  userId       String
+  user         User       @relation("UserMembers", fields: [userId], references: [id])
+
+  /* FK → Community */
+  communityId  String
+  community    Community  @relation(fields: [communityId], references: [id])
+
+  balance      BigInt
+  role         MemberRole
+
+  /* many-to-many & misc back-refs */
+  tasks         Task[]     @relation("MemberTasks")
+  projects      Project[]  @relation("MemberProjects")
+  allocations   Allocation[]
+  teamLed       Project[]  @relation("TeamLeader")
+  created       Project[]  @relation("ProjectCreator")
+  createdTasks  Task[]     @relation("TaskCreator")
+
+  @@unique([userId, communityId])
+}
+
+/* ═══════════ PROJECTS & TASKS ═══════════ */
+
+model Project {
+  id            String        @id @default(uuid())
+  title         String
+  description   String
+  balance       BigInt
+
+  /* FK → Community that owns this project */
+  communityId   String
+  community     Community     @relation("CommunityProjects", fields: [communityId], references: [id])
+
+  /* FK → Member who is team leader */
+  teamLeaderId  String
+  teamLeader    Member        @relation("TeamLeader", fields: [teamLeaderId], references: [id])
+
+  /* FK → Member who created it */
+  creatorId     String
+  creator       Member        @relation("ProjectCreator", fields: [creatorId], references: [id])
+
+  /* FK → User (to satisfy User.projects[]) */
+  ownerId       String
+  owner         User          @relation("UserProjects", fields: [ownerId], references: [id])
+
+  deadline      String
+  status        ProjectStatus
+
+  members       Member[]      @relation("MemberProjects")
+  tasks         Task[]
+
+  createdAt     String?
+  updatedAt     String?
+}
+
+model Task {
+  id          String       @id @default(uuid())
+  name        String
+  description String
+  status      TaskStatus
+  priority    TaskPriority
+  balance     BigInt
+  deadline    String
+
+  /* FK → User (to satisfy User.tasks[]) */
+  ownerId     String
+  owner       User         @relation("UserTasks", fields: [ownerId], references: [id])
+
+  /* FK → Project (Task ↔ Project) */
+  projectId   String
+  project     Project      @relation(fields: [projectId], references: [id])
+
+  /* many-to-many Task ↔ Member */
+  members     Member[]     @relation("MemberTasks")
+
+  /* FK → Member who created the task */
+  creatorId   String
+  creator     Member       @relation("TaskCreator", fields: [creatorId], references: [id])
+
+  createdAt   String?
+  updatedAt   String?
+}
+
+/* ═══════════ ALLOCATION ═══════════ */
+
+model Allocation {
+  id          String     @id @default(uuid())
+  amount      BigInt
+
+  /* FK → Member */
+  memberId    String
+  member      Member     @relation(fields: [memberId], references: [id])
+
+  /* FK → Community (for Community.allocations[]) */
+  communityId String
+  community   Community  @relation("CommunityAllocations", fields: [communityId], references: [id])
+}
