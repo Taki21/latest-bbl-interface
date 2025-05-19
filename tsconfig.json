@@ -32,7 +32,7 @@
     ".next/types/**/*.ts",
     "**/*.ts",
     "**/*.tsx"
-, "atoms/user.js"  ],
+, "atoms/user.js", "app/(app)/(dapp)/[communityId]/layout.js"  ],
   "exclude": [
     "node_modules"
   ]
