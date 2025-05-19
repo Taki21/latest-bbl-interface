@@ -1,5 +1,6 @@
 "use client";
 
+import { ReactNode } from "react";
 import { useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAccount } from "wagmi";
@@ -22,6 +23,13 @@ import WalletButton from "@/components/Wallet";
 import { ModeToggle } from "@/components/ToggleTheme";
 import MiniBalance from "@/components/MiniBalance";
 
+/* ---- TEMP: tell TS that SidebarProvider is a component accepting children -- */
+const TypedSidebarProvider =
+  SidebarProvider as unknown as React.ComponentType<{
+    children: ReactNode;
+  }>;
+/* ------------------------------------------------------------------------- */
+
 interface DappLayoutProps {
   children: React.ReactNode;
 }
@@ -41,7 +49,7 @@ export default function DappLayout({ children }: DappLayoutProps) {
   if (!isConnected) return null;
 
   return (
-    <SidebarProvider>
+    <TypedSidebarProvider>
       <AppSidebar communityId={communityId} />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 justify-between pr-4">
@@ -68,6 +76,6 @@ export default function DappLayout({ children }: DappLayoutProps) {
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">{children}</div>
       </SidebarInset>
-    </SidebarProvider>
+    </TypedSidebarProvider>
   );
 }
