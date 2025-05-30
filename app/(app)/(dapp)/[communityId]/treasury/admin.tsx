@@ -33,7 +33,7 @@ export default function TreasuryPage() {
     fetch(`/api/community/${communityId}/members`)
       .then((r) => r.json())
       .then((m: Member[]) =>
-        setMembers(m.filter((x) => x.role === "Professor" || x.role === "TeamLeader"))
+        setMembers(m.filter((x) => x.role === "Professor" || x.role === "Team_Leader"))
       );
 
   useEffect(() => {

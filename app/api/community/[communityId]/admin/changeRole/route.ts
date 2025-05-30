@@ -1,43 +1,58 @@
+// File: app/api/community/[communityId]/admin/changeRole/route.ts
+
 import { NextResponse } from "next/server";
 import { prisma, safeJson } from "@/lib/prisma";
 import { MemberRole } from "@prisma/client";
 
 export async function POST(
   req: Request,
-  ctx: { params: Promise<{ communityId: string }> }
+  ctx: { params: { communityId: string } }
 ) {
-  const routeParams = await ctx.params;
-
   try {
     const { memberId, newRole, address } = await req.json();
     if (!memberId || !newRole || !address) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
-    // Only Owner or Professor can change roles
+    // ── 1) Validate role ────────────────────────────────────────────────
+    const enumValue = (MemberRole as Record<string, MemberRole>)[newRole];
+    if (!enumValue) {
+      return NextResponse.json(
+        {
+          error: `Invalid role. Must be one of ${Object.keys(MemberRole).join(
+            ", "
+          )}`,
+        },
+        { status: 400 }
+      );
+    }
+
+    // ── 2) Caller must be Owner or Professor ────────────────────────────
     const caller = await prisma.member.findFirst({
       where: {
-        communityId: routeParams.communityId,
+        communityId: ctx.params.communityId,
         user: { address },
       },
       select: { role: true },
     });
     if (
       !caller ||
-      (caller.role !== MemberRole.Owner &&
-        caller.role !== MemberRole.Professor)
+      (caller.role !== MemberRole.Owner && caller.role !== MemberRole.Professor)
     ) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    // Can't change your own role
+    // ── 3) Prevent self-change & validate target ────────────────────────
     const target = await prisma.member.findUnique({
       where: { id: memberId },
-      select: { user: { select: { address: true } }, communityId: true },
+      select: {
+        communityId: true,
+        user: { select: { address: true } },
+      },
     });
     if (
       !target ||
-      target.communityId !== routeParams.communityId ||
+      target.communityId !== ctx.params.communityId ||
       target.user.address.toLowerCase() === address.toLowerCase()
     ) {
       return NextResponse.json(
@@ -46,10 +61,10 @@ export async function POST(
       );
     }
 
-    // Update role
+    // ── 4) Update using the enum constant ───────────────────────────────
     const updated = await prisma.member.update({
       where: { id: memberId },
-      data: { role: newRole as MemberRole },
+      data: { role: enumValue },
       select: {
         id: true,
         role: true,
@@ -60,6 +75,9 @@ export async function POST(
     return NextResponse.json(safeJson(updated), { status: 200 });
   } catch (err) {
     console.error("changeRole error", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }

@@ -1,35 +1,35 @@
+// File: app/api/community/[communityId]/projects/create/route.ts
 import { NextResponse } from "next/server";
 import { prisma, safeJson } from "@/lib/prisma";
 import { MemberRole } from "@prisma/client";
 
 export async function POST(
   req: Request,
-  ctx: { params: Promise<{ communityId: string }> }
+  { params }: { params: { communityId: string } }
 ) {
-  const routeParams = await ctx.params;
+  const { communityId } = params;
 
   try {
     const {
       title,
       description = "",
       deadline,
-      balance,          // integer tokens to allocate
+      balance,        // integer tokens to allocate
       status = "active",
       creatorAddress,
       teamLeaderId,
       memberIds = [],
     } = await req.json();
 
-    // Validate
+    // 0) Basic validation
     if (!title || !deadline || balance == null || !creatorAddress || !teamLeaderId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    const communityId = routeParams.communityId;
-    const allocation = BigInt(balance);           // whole tokens
+    const allocation = BigInt(balance);
     const allocationStr = allocation.toString();
 
-    // 1) Find creator’s user & member row
+    // 1) Load the creator's User → Member record
     const user = await prisma.user.findUnique({
       where: { address: creatorAddress },
       select: { id: true },
@@ -39,25 +39,28 @@ export async function POST(
     }
     const me = await prisma.member.findFirst({
       where: { userId: user.id, communityId },
-      select: { id: true, role: true, balance: true },
+      select: { id: true, role: true, allocation: true },
     });
-    if (!me || (me.role !== MemberRole.Owner && me.role !== MemberRole.Professor)) {
+    if (
+      !me ||
+      (me.role !== MemberRole.Owner && me.role !== MemberRole.Professor)
+    ) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
-    if (me.balance < allocation) {
-      return NextResponse.json({ error: "Insufficient balance" }, { status: 400 });
+    if (me.allocation < allocation) {
+      return NextResponse.json({ error: "Insufficient allocation" }, { status: 400 });
     }
 
-    // 2) Ensure teamLeader is in this community
+    // 2) Ensure teamLeader is in the same community
     const tl = await prisma.member.findUnique({
       where: { id: teamLeaderId },
       select: { id: true, role: true, communityId: true },
     });
     if (!tl || tl.communityId !== communityId) {
-      return NextResponse.json({ error: "Invalid teamLeader" }, { status: 400 });
+      return NextResponse.json({ error: "Invalid team leader" }, { status: 400 });
     }
 
-    // 3) Ensure all memberIds belong to this community
+    // 3) Validate all selected memberIds
     const validMembers = await prisma.member.findMany({
       where: { id: { in: memberIds }, communityId },
       select: { id: true },
@@ -66,14 +69,14 @@ export async function POST(
       return NextResponse.json({ error: "Invalid member list" }, { status: 400 });
     }
 
-    // 4) Run transaction: deduct from professor, create project with balance
+    // 4) Transaction:
+    //    a) decrement creator.allocation
+    //    b) create new project with its balance = allocation
     const [_, project] = await prisma.$transaction([
-      // decrement professor balance
       prisma.member.update({
         where: { id: me.id },
-        data: { balance: { decrement: allocationStr } },
+        data: { allocation: { decrement: allocationStr } },
       }),
-      // create project
       prisma.project.create({
         data: {
           title,
@@ -82,25 +85,27 @@ export async function POST(
           status,
           balance: allocation,
           communityId,
-          ownerId: user.id,
-          creatorId: me.id,
+          ownerId:    user.id,
+          creatorId:  me.id,
           teamLeaderId,
-          members: { connect: validMembers.map((m) => ({ id: m.id })) },
+          members: {
+            connect: validMembers.map((m) => ({ id: m.id })),
+          },
         },
       }),
     ]);
 
-    // 5) If teamLeader was default Member → promote to TeamLeader
-    if (tl.role === MemberRole.Member) {
+    // 5) Auto-promote default member → team leader if needed
+    if (tl.role === MemberRole.Default) {
       await prisma.member.update({
         where: { id: teamLeaderId },
-        data: { role: MemberRole.TeamLeader },
+        data: { role: MemberRole.Team_Leader },
       });
     }
 
     return NextResponse.json(safeJson(project), { status: 201 });
   } catch (err) {
     console.error("create-project error", err);
-    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

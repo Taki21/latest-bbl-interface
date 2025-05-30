@@ -86,7 +86,7 @@ export function TasksTable({ tasks, onSelect }: TasksTableProps) {
               {new Date(task.deadline).toLocaleDateString()}
             </TableCell>
             <TableCell className="text-right">
-              {formatEther(task.balance.toString())} TOKEN
+              {task.balance.toString()} TOKEN
             </TableCell>
           </TableRow>
         ))}

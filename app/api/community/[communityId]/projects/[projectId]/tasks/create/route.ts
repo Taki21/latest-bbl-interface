@@ -1,3 +1,5 @@
+// File: app/api/community/[communityId]/projects/[projectId]/tasks/create/route.ts
+
 import { NextResponse } from "next/server";
 import { prisma, safeJson } from "@/lib/prisma";
 import { MemberRole } from "@prisma/client";
@@ -6,7 +8,7 @@ export async function POST(
   req: Request,
   ctx: { params: Promise<{ communityId: string; projectId: string }> }
 ) {
-  const routeParams = await ctx.params;
+  const { communityId, projectId } = await ctx.params;
 
   try {
     const {
@@ -20,17 +22,18 @@ export async function POST(
       memberIds = [],
     } = await req.json();
 
-    // Validate
+    // 1) Validate required fields
     if (!name || !deadline || balance == null || !creatorAddress) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 }
+      );
     }
 
-    const communityId = routeParams.communityId;
-    const projectId = routeParams.projectId;
-    const allocation = BigInt(balance);
+    const allocation    = BigInt(balance);
     const allocationStr = allocation.toString();
 
-    // 1) Lookup user & member
+    // 2) Lookup User → Member
     const user = await prisma.user.findUnique({
       where: { address: creatorAddress },
       select: { id: true },
@@ -38,21 +41,28 @@ export async function POST(
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
+
     const me = await prisma.member.findFirst({
       where: { userId: user.id, communityId },
       select: { id: true, role: true },
     });
     if (!me) {
-      return NextResponse.json({ error: "Not a community member" }, { status: 403 });
+      return NextResponse.json(
+        { error: "Not a community member" },
+        { status: 403 }
+      );
     }
 
-    // 2) Fetch project & check perms
+    // 3) Fetch project & check permissions + funds
     const project = await prisma.project.findUnique({
       where: { id: projectId },
       select: { balance: true, teamLeaderId: true },
     });
     if (!project) {
-      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Project not found" },
+        { status: 404 }
+      );
     }
     if (
       me.role !== MemberRole.Owner &&
@@ -62,26 +72,32 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
     if (project.balance < allocation) {
-      return NextResponse.json({ error: "Insufficient project funds" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Insufficient project funds" },
+        { status: 400 }
+      );
     }
 
-    // 3) Ensure all memberIds valid
+    // 4) Validate memberIds
     const validMembers = await prisma.member.findMany({
       where: { id: { in: memberIds }, communityId },
       select: { id: true },
     });
     if (validMembers.length !== memberIds.length) {
-      return NextResponse.json({ error: "Invalid members list" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid members list" },
+        { status: 400 }
+      );
     }
 
-    // 4) Transaction: deduct project balance + create task
-    const [_, task] = await prisma.$transaction([
-      // decrement project
+    // 5) Run transaction:  
+    //    a) decrement project.balance  
+    //    b) create task (including required ownerId)  
+    const [, task] = await prisma.$transaction([
       prisma.project.update({
         where: { id: projectId },
         data: { balance: { decrement: allocationStr } },
       }),
-      // create the task
       prisma.task.create({
         data: {
           name,
@@ -92,7 +108,10 @@ export async function POST(
           balance: allocation,
           projectId,
           creatorId: me.id,
-          members: { connect: validMembers.map((m) => ({ id: m.id })) },
+          ownerId:   user.id,       // ← REQUIRED: satisfy `owner` relation
+          members: {
+            connect: validMembers.map((m) => ({ id: m.id })),
+          },
         },
       }),
     ]);
@@ -100,6 +119,9 @@ export async function POST(
     return NextResponse.json(safeJson(task), { status: 201 });
   } catch (err) {
     console.error("create-task error", err);
-    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }

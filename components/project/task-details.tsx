@@ -1,5 +1,9 @@
+// File: components/project/task-details.tsx
 "use client";
 
+import { useState, useEffect } from "react";
+import { useAccount } from "wagmi";
+import { useParams, useRouter } from "next/navigation";
 import { formatEther } from "viem";
 import {
   Card,
@@ -14,6 +18,15 @@ import {
   AvatarFallback,
 } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { MoreVertical, Pencil, Share2 } from "lucide-react";
 
 interface User {
   id: string;
@@ -37,6 +50,72 @@ interface TaskDetailsProps {
 }
 
 export function TaskDetails({ task }: TaskDetailsProps) {
+  const { communityId, projectId } = useParams<{
+    communityId: string;
+    projectId: string;
+  }>();
+  const { address: currentAddress } = useAccount();
+  const router = useRouter();
+
+  const [role, setRole] = useState<string | null>(null);
+  const [meId, setMeId] = useState<string | null>(null);
+  const [projCreatorId, setProjCreatorId] = useState<string | null>(null);
+  const [projTeamLeaderId, setProjTeamLeaderId] = useState<string | null>(null);
+
+  // fetch my member record + role
+  useEffect(() => {
+    if (!communityId || !currentAddress) return;
+    fetch(`/api/community/${communityId}/members`)
+      .then((r) => r.json())
+      .then((members: any[]) => {
+        const me = members.find(
+          (m) =>
+            m.user.address.toLowerCase() ===
+            currentAddress.toLowerCase()
+        );
+        if (me) {
+          setRole(me.role);
+          setMeId(me.id);
+        }
+      })
+      .catch(console.error);
+  }, [communityId, currentAddress]);
+
+  // fetch project metadata (creatorId & teamLeaderId)
+  useEffect(() => {
+    if (!communityId || !projectId) return;
+    fetch(`/api/community/${communityId}/projects/${projectId}`)
+      .then((r) => r.json())
+      .then((p: any) => {
+        setProjCreatorId(p.creatorId);
+        setProjTeamLeaderId(p.teamLeaderId);
+      })
+      .catch(console.error);
+  }, [communityId, projectId]);
+
+  // determine if we show the menu
+  const canEdit =
+    role === "Owner" ||
+    role === "Professor" ||
+    meId === projCreatorId ||
+    meId === projTeamLeaderId;
+
+  // share helper
+  const [copied, setCopied] = useState(false);
+  const share = async () => {
+    const href = `/${communityId}/projects/${projectId}?task=${task.id}`;
+    const url = window.location.origin + href;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: task.name, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      }
+    } catch {}
+  };
+
   const creatorName = task.creator.name ?? task.creator.address;
   const creatorInitials = creatorName
     .split(" ")
@@ -45,13 +124,46 @@ export function TaskDetails({ task }: TaskDetailsProps) {
     .toUpperCase();
 
   return (
-    <Card>
+    <Card className="relative">
+      {/* 3-dots menu */}
+      {canEdit && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 h-8 w-8 opacity-70 hover:opacity-100"
+            >
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-40">
+            <DropdownMenuItem onClick={share}>
+              <Share2 className="mr-2 h-4 w-4" />
+              {copied ? "Copied!" : "Share"}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() =>
+                router.push(
+                  `/${communityId}/projects/${projectId}/tasks/${task.id}/edit`
+                )
+              }
+            >
+              <Pencil className="mr-2 h-4 w-4" />
+              Edit
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+
       <CardHeader>
         <CardTitle>{task.name}</CardTitle>
         {task.description && (
           <CardDescription>{task.description}</CardDescription>
         )}
       </CardHeader>
+
       <CardContent className="grid grid-cols-1 gap-4">
         {/* Status & Priority */}
         <div className="flex space-x-4">
@@ -82,17 +194,18 @@ export function TaskDetails({ task }: TaskDetailsProps) {
                   : "default"
               }
             >
-              {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+              {task.priority.charAt(0).toUpperCase() +
+                task.priority.slice(1)}
             </Badge>
           </div>
         </div>
 
-        {/* Balance & Deadline */}
+        {/* Budget & Deadline */}
         <div className="flex space-x-4">
           <div>
             <p className="text-xs text-muted-foreground">Budget</p>
             <p className="font-medium">
-              {formatEther(task.balance.toString())} TOKEN
+              {task.balance.toString()} TOKEN
             </p>
           </div>
           <div>
@@ -110,14 +223,18 @@ export function TaskDetails({ task }: TaskDetailsProps) {
             <AvatarFallback>{creatorInitials}</AvatarFallback>
           </Avatar>
           <div>
-            <p className="text-xs text-muted-foreground">Created by</p>
+            <p className="text-xs text-muted-foreground">
+              Created by
+            </p>
             <p className="font-medium">{creatorName}</p>
           </div>
         </div>
 
         {/* Assigned Members */}
         <div>
-          <p className="text-xs text-muted-foreground">Assigned to</p>
+          <p className="text-xs text-muted-foreground">
+            Assigned to
+          </p>
           <div className="flex -space-x-2">
             {task.members.map((m) => {
               const name = m.name ?? m.address;

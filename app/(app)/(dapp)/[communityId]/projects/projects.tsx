@@ -15,6 +15,7 @@ import ProjectForm from "@/components/project/project-form";
 import type { Project as PrismaProject } from "@prisma/client";
 
 interface Project extends PrismaProject {
+  creatorAddress: string;           // make sure your API returns this
   members: { id: string }[];
   tasks: { id: string; status: string }[];
 }
@@ -47,11 +48,12 @@ export default function ProjectsPage() {
         const me = members.find(
           (m: any) => m.user?.address?.toLowerCase() === address.toLowerCase()
         );
-        if (me) setRole(me.role);
+        setRole(me?.role ?? null);
       });
   }, [communityId, address]);
 
-  const canCreate = role === "Owner" || role === "Professor";
+  const isAdmin    = role === "Owner" || role === "Professor";
+  const canCreate  = isAdmin;
 
   /* ─── render ──────────────────────────────────── */
   return (
@@ -68,7 +70,13 @@ export default function ProjectsPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {projects.map((p) => (
-            <ProjectCard key={p.id} project={p} communityId={communityId} />
+            <ProjectCard
+              key={p.id}
+              communityId={communityId}
+              project={p}
+              currentAddress={address}
+              isAdmin={isAdmin}
+            />
           ))}
         </div>
       )}

@@ -1,3 +1,5 @@
+// File: app/api/user/get/route.ts
+
 import { NextResponse } from "next/server";
 import { prisma, safeJson } from "@/lib/prisma";
 
@@ -12,7 +14,7 @@ export async function GET(req: Request) {
       );
     }
 
-    // Fetch user along with their member-community relations
+    // Fetch the user and _all_ their Member records (including allocation & role)
     const user = await prisma.user.findUnique({
       where: { address },
       select: {
@@ -22,12 +24,11 @@ export async function GET(req: Request) {
         address: true,
         members: {
           select: {
+            id:         true,
+            allocation: true,
+            role:       true,
             community: {
-              select: {
-                id: true,
-                name: true,
-                joinCode: true,
-              },
+              select: { id: true, name: true, joinCode: true },
             },
           },
         },
@@ -35,21 +36,14 @@ export async function GET(req: Request) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "User not found" },
+        { status: 404 }
+      );
     }
 
-    // Extract the array of communities
-    const communities = user.members.map((m) => m.community);
-
-    return NextResponse.json(
-      safeJson({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        address: user.address,
-        communities,
-      })
-    );
+    // Return with safeJson so BigInt -> string for JSON
+    return NextResponse.json(safeJson(user), { status: 200 });
   } catch (err) {
     console.error("GET /api/user/get error", err);
     return NextResponse.json(

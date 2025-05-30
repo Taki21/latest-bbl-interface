@@ -80,7 +80,6 @@ model Community {
 
   members          Member[]
   projects         Project[]  @relation("CommunityProjects")
-  allocations      Allocation[] @relation("CommunityAllocations")
 
   createdAt        String?
   updatedAt        String?
@@ -103,7 +102,7 @@ model Member {
   /* many-to-many & misc back-refs */
   tasks         Task[]     @relation("MemberTasks")
   projects      Project[]  @relation("MemberProjects")
-  allocations   Allocation[]
+  allocation    BigInt     @default(0)
   teamLed       Project[]  @relation("TeamLeader")
   created       Project[]  @relation("ProjectCreator")
   createdTasks  Task[]     @relation("TaskCreator")
@@ -171,19 +170,4 @@ model Task {
 
   createdAt   String?
   updatedAt   String?
-}
-
-/* ═══════════ ALLOCATION ═══════════ */
-
-model Allocation {
-  id          String     @id @default(uuid())
-  amount      BigInt
-
-  /* FK → Member */
-  memberId    String
-  member      Member     @relation(fields: [memberId], references: [id])
-
-  /* FK → Community (for Community.allocations[]) */
-  communityId String
-  community   Community  @relation("CommunityAllocations", fields: [communityId], references: [id])
 }

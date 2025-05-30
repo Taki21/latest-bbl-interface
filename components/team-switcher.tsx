@@ -1,3 +1,4 @@
+// File: components/team-switcher.tsx
 "use client";
 
 import * as React from "react";
@@ -19,12 +20,20 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useAccount } from "wagmi";
-import { useRouter } from "next/navigation";
+import { useRouter }  from "next/navigation";
 
 interface Community {
   id: string;
   name: string;
   joinCode: string;
+}
+
+interface UserMember {
+  community: Community;
+}
+
+interface UserResponse {
+  members: UserMember[];
 }
 
 interface Team {
@@ -39,28 +48,37 @@ export function TeamSwitcher() {
   const router = useRouter();
   const { isMobile } = useSidebar();
 
-  const [teams, setTeams]         = useState<Team[]>([]);
+  const [teams, setTeams]           = useState<Team[]>([]);
   const [activeTeam, setActiveTeam] = useState<Team | null>(null);
 
-  // Fetch the user’s communities on mount
+  // Fetch once on mount
   useEffect(() => {
     if (!isConnected || !address) return;
+
     fetch(`/api/user/get?address=${address}`)
       .then((res) => res.json())
-      .then((data: { communities: Community[] }) => {
-        const mapped: Team[] = data.communities.map((c) => ({
-          id: c.id,
-          name: c.name,
-          plan: c.joinCode,
-          logo: ChevronsUpDown,   // use any icon you prefer here
+      .then((data: UserResponse) => {
+        const mapped: Team[] = data.members.map(({ community }) => ({
+          id:   community.id,
+          name: community.name,
+          plan: community.joinCode ?? "",
+          logo: ChevronsUpDown,
         }));
+
         setTeams(mapped);
-        if (mapped.length) setActiveTeam(mapped[0]);
+
+        // set an in-memory default if nothing selected yet
+        if (!activeTeam && mapped.length) {
+          setActiveTeam(mapped[0]);
+        }
       })
       .catch(console.error);
   }, [isConnected, address]);
 
-  if (!isConnected || !activeTeam) return null;
+  // nothing to render until we've loaded teams
+  if (!isConnected || !activeTeam) {
+    return null;
+  }
 
   return (
     <SidebarMenu>
@@ -71,7 +89,7 @@ export function TeamSwitcher() {
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <div className="flex aspect-square h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                 <activeTeam.logo className="h-4 w-4" />
               </div>
               <div className="ml-2 flex-1 text-left text-sm leading-tight">
@@ -111,7 +129,9 @@ export function TeamSwitcher() {
 
             <DropdownMenuItem className="flex items-center gap-2 px-3 py-2 text-sm">
               <Plus className="h-4 w-4" />
-              <span className="font-medium text-muted-foreground">Add community</span>
+              <span className="font-medium text-muted-foreground">
+                Add community
+              </span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

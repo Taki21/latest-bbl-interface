@@ -80,7 +80,7 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
         <div>
           <p className="text-sm text-muted-foreground">Budget</p>
           <p className="font-medium">
-            {formatEther(project.balance.toString())} TOKEN
+            {project.balance.toString()} TOKEN
           </p>
         </div>
 

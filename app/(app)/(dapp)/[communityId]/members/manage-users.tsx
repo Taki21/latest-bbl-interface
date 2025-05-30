@@ -33,6 +33,16 @@ interface Member {
   user: { id: string; name: string | null; address: string; email: string | null };
 }
 
+// Enum strings exactly as Prisma expects
+const roles = ["Owner", "Professor", "Team_Leader", "Default"] as const;
+
+// Convert enum → nice label
+const pretty = (r: string) =>
+  r
+    .toLowerCase()
+    .replace("_", " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+
 export default function MembersPage() {
   const { communityId } = useParams<{ communityId: string }>();
   const { address }    = useAccount();
@@ -41,9 +51,6 @@ export default function MembersPage() {
   const [myRole, setMyRole]     = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  const roles = ["Owner", "Professor", "TeamLeader", "Member"];
-
-  // Load members + detect my own role
   const fetchMembers = () =>
     fetch(`/api/community/${communityId}/members`)
       .then((r) => r.json())
@@ -59,7 +66,7 @@ export default function MembersPage() {
     if (communityId) fetchMembers();
   }, [communityId]);
 
-  const isAdmin = myRole === "Owner";  // **Only Owners** are admins here
+  const isAdmin = myRole === "Owner"; // Only Owners may change roles
 
   const changeRole = async (memberId: string, newRole: string) => {
     setUpdatingId(memberId);
@@ -116,23 +123,27 @@ export default function MembersPage() {
                         onValueChange={(v) => changeRole(m.id, v)}
                         disabled={updatingId === m.id}
                       >
-                        <SelectTrigger className="w-32">
-                          {updatingId === m.id ? "Updating..." : m.role}
+                        <SelectTrigger className="w-40">
+                          {updatingId === m.id ? "Updating…" : pretty(m.role)}
                         </SelectTrigger>
                         <SelectContent>
                           {roles.map((r) => (
                             <SelectItem key={r} value={r}>
-                              {r}
+                              {pretty(r)}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     ) : (
-                      <Badge variant="secondary">{m.role}</Badge>
+                      <Badge variant="secondary">{pretty(m.role)}</Badge>
                     )}
                   </TableCell>
-                  <TableCell className="text-right">{m.balance} TOKEN</TableCell>
-                  <TableCell className="text-right">{m.allocated} TOKEN</TableCell>
+                  <TableCell className="text-right">
+                    {m.balance} TOKEN
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {m.allocated} TOKEN
+                  </TableCell>
                 </TableRow>
               );
             })}
