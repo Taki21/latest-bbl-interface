@@ -123,6 +123,50 @@ export function TaskDetails({ task }: TaskDetailsProps) {
     .join("")
     .toUpperCase();
 
+  const isAssigned = task.members.some(
+    (m) => m.address.toLowerCase() === currentAddress?.toLowerCase()
+  );
+
+  const canApprove =
+    task.status === "under_review" &&
+    (role === "Professor" || role === "Owner" || meId === projTeamLeaderId);
+
+  const startTask = async () => {
+    await fetch(
+      `/api/community/${communityId}/projects/${projectId}/tasks/${task.id}/start`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: currentAddress }),
+      }
+    );
+    router.refresh();
+  };
+
+  const finishTask = async () => {
+    await fetch(
+      `/api/community/${communityId}/projects/${projectId}/tasks/${task.id}/finish`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: currentAddress }),
+      }
+    );
+    router.refresh();
+  };
+
+  const approveTask = async () => {
+    await fetch(
+      `/api/community/${communityId}/projects/${projectId}/tasks/${task.id}/approve`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: currentAddress }),
+      }
+    );
+    router.refresh();
+  };
+
   return (
     <Card className="relative">
       {/* 3-dots menu */}
@@ -255,6 +299,17 @@ export function TaskDetails({ task }: TaskDetailsProps) {
             })}
           </div>
         </div>
+
+        {/* Action Button */}
+        {isAssigned && task.status === "not_started" && (
+          <Button onClick={startTask}>Start Task</Button>
+        )}
+        {isAssigned && task.status === "in_progress" && (
+          <Button onClick={finishTask}>Finish Task</Button>
+        )}
+        {canApprove && (
+          <Button onClick={approveTask}>Approve</Button>
+        )}
       </CardContent>
     </Card>
   );
