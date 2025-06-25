@@ -47,9 +47,10 @@ interface TaskDetailsProps {
     creator: User;
     members: User[];
   };
+  refresh: () => void;
 }
 
-export function TaskDetails({ task }: TaskDetailsProps) {
+export function TaskDetails({ task, refresh }: TaskDetailsProps) {
   const { communityId, projectId } = useParams<{
     communityId: string;
     projectId: string;
@@ -142,7 +143,7 @@ export function TaskDetails({ task }: TaskDetailsProps) {
       }
     );
     if (res.ok) {
-      router.refresh();
+      refresh();
     }
   };
 
@@ -156,7 +157,7 @@ export function TaskDetails({ task }: TaskDetailsProps) {
       }
     );
     if (res.ok) {
-      router.refresh();
+      refresh();
     }
   };
 
@@ -170,7 +171,7 @@ export function TaskDetails({ task }: TaskDetailsProps) {
       }
     );
     if (res.ok) {
-      router.refresh();
+      refresh();
     }
   };
 

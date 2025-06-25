@@ -1,21 +1,23 @@
 
 "use client";
 
-import { Wallet, Users2, ClipboardList, FolderGit2 } from "lucide-react";
+import { Wallet, Users2, ClipboardList, FolderGit2, Coins } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 export default function StatCards(props: {
   balance: string;
+  allocation: string;
   members: number;
   projects: number;
   tasks: number;
 }) {
-  const { balance, members, projects, tasks } = props;
+  const { balance, allocation, members, projects, tasks } = props;
   const stats = [
-    { label: "Treasury", val: `${balance} TOKEN`, icon: Wallet },
-    { label: "Members",  val: members,           icon: Users2 },
-    { label: "Projects", val: projects,          icon: FolderGit2 },
-    { label: "Tasks",    val: tasks,             icon: ClipboardList },
+    { label: "Balance",    val: `${balance} TOKEN`,    icon: Wallet },
+    { label: "Allocation", val: `${allocation} TOKEN`, icon: Coins },
+    { label: "Members",    val: members,              icon: Users2 },
+    { label: "Projects",   val: projects,             icon: FolderGit2 },
+    { label: "Tasks",      val: tasks,                icon: ClipboardList },
   ];
 
   return (

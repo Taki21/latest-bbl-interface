@@ -62,7 +62,7 @@ export default function DappLayout({ children }) {
           </div>
           <div className="flex items-center gap-2">
             <ModeToggle />
-            <MiniBalance />
+            <MiniBalance communityId={communityId} />
             <WalletButton />
           </div>
         </header>
