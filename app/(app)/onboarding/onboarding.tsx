@@ -160,9 +160,9 @@ export default function Onboarding() {
           </div>
         </section>
         <section className="mx-auto flex flex-col items-center gap-4">
-          <Rocket className="h-9 w-9 text-primary animate-bounce-slow" />
+          {/* <Rocket className="h-9 w-9 text-primary animate-bounce-slow" /> */}
           <Button size="lg" onClick={() => setShowGetStarted(true)}>
-            Start Guided Setup
+            Join Community
           </Button>
         </section>
       </main>
