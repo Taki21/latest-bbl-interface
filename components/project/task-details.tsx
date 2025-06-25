@@ -57,11 +57,6 @@ export function TaskDetails({ task }: TaskDetailsProps) {
   const { address: currentAddress } = useAccount();
   const router = useRouter();
 
-  const [localTask, setLocalTask] = useState<TaskDetailsProps["task"]>(task);
-
-  useEffect(() => {
-    setLocalTask(task);
-  }, [task]);
 
   const [role, setRole] = useState<string | null>(null);
   const [meId, setMeId] = useState<string | null>(null);
@@ -109,11 +104,11 @@ export function TaskDetails({ task }: TaskDetailsProps) {
   // share helper
   const [copied, setCopied] = useState(false);
   const share = async () => {
-    const href = `/${communityId}/projects/${projectId}?task=${localTask.id}`;
+    const href = `/${communityId}/projects/${projectId}?task=${task.id}`;
     const url = window.location.origin + href;
     try {
       if (navigator.share) {
-        await navigator.share({ title: localTask.name, url });
+        await navigator.share({ title: task.name, url });
       } else {
         await navigator.clipboard.writeText(url);
         setCopied(true);
@@ -122,24 +117,24 @@ export function TaskDetails({ task }: TaskDetailsProps) {
     } catch {}
   };
 
-  const creatorName = localTask.creator.name ?? localTask.creator.address;
+  const creatorName = task.creator.name ?? task.creator.address;
   const creatorInitials = creatorName
     .split(" ")
     .map((w) => w[0])
     .join("")
     .toUpperCase();
 
-  const isAssigned = localTask.members.some(
+  const isAssigned = task.members.some(
     (m) => m.address.toLowerCase() === currentAddress?.toLowerCase()
   );
 
   const canApprove =
-    localTask.status === "under_review" &&
+    task.status === "under_review" &&
     (role === "Professor" || role === "Owner" || meId === projTeamLeaderId);
 
   const startTask = async () => {
     const res = await fetch(
-      `/api/community/${communityId}/projects/${projectId}/tasks/${localTask.id}/start`,
+      `/api/community/${communityId}/projects/${projectId}/tasks/${task.id}/start`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -147,14 +142,13 @@ export function TaskDetails({ task }: TaskDetailsProps) {
       }
     );
     if (res.ok) {
-      const updated = await res.json();
-      setLocalTask(updated);
+      router.refresh();
     }
   };
 
   const finishTask = async () => {
     const res = await fetch(
-      `/api/community/${communityId}/projects/${projectId}/tasks/${localTask.id}/finish`,
+      `/api/community/${communityId}/projects/${projectId}/tasks/${task.id}/finish`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -162,14 +156,13 @@ export function TaskDetails({ task }: TaskDetailsProps) {
       }
     );
     if (res.ok) {
-      const updated = await res.json();
-      setLocalTask(updated);
+      router.refresh();
     }
   };
 
   const approveTask = async () => {
     const res = await fetch(
-      `/api/community/${communityId}/projects/${projectId}/tasks/${localTask.id}/approve`,
+      `/api/community/${communityId}/projects/${projectId}/tasks/${task.id}/approve`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -177,8 +170,7 @@ export function TaskDetails({ task }: TaskDetailsProps) {
       }
     );
     if (res.ok) {
-      const updated = await res.json();
-      setLocalTask(updated);
+      router.refresh();
     }
   };
 
@@ -205,7 +197,7 @@ export function TaskDetails({ task }: TaskDetailsProps) {
             <DropdownMenuItem
                 onClick={() =>
                   router.push(
-                    `/${communityId}/projects/${projectId}/tasks/${localTask.id}/edit`
+                    `/${communityId}/projects/${projectId}/tasks/${task.id}/edit`
                   )
                 }
             >
@@ -217,9 +209,9 @@ export function TaskDetails({ task }: TaskDetailsProps) {
       )}
 
       <CardHeader>
-        <CardTitle>{localTask.name}</CardTitle>
-        {localTask.description && (
-          <CardDescription>{localTask.description}</CardDescription>
+        <CardTitle>{task.name}</CardTitle>
+        {task.description && (
+          <CardDescription>{task.description}</CardDescription>
         )}
       </CardHeader>
 
@@ -230,31 +222,31 @@ export function TaskDetails({ task }: TaskDetailsProps) {
             <p className="text-xs text-muted-foreground">Status</p>
             <Badge
               variant={
-                localTask.status === "completed"
+                task.status === "completed"
                   ? "success"
-                  : localTask.status === "under_review"
+                  : task.status === "under_review"
                   ? "outline"
-                  : localTask.status === "in_progress"
+                  : task.status === "in_progress"
                   ? "secondary"
                   : "destructive"
               }
             >
-              {localTask.status.replace("_", " ")}
+              {task.status.replace("_", " ")}
             </Badge>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Priority</p>
             <Badge
               variant={
-                localTask.priority === "high"
+                task.priority === "high"
                   ? "destructive"
-                  : localTask.priority === "medium"
+                  : task.priority === "medium"
                   ? "warning"
                   : "default"
               }
             >
-              {localTask.priority.charAt(0).toUpperCase() +
-                localTask.priority.slice(1)}
+              {task.priority.charAt(0).toUpperCase() +
+                task.priority.slice(1)}
             </Badge>
           </div>
         </div>
@@ -264,13 +256,13 @@ export function TaskDetails({ task }: TaskDetailsProps) {
           <div>
             <p className="text-xs text-muted-foreground">Budget</p>
             <p className="font-medium">
-              {localTask.balance.toString()} TOKEN
+              {task.balance.toString()} TOKEN
             </p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Deadline</p>
             <p className="font-medium">
-              {new Date(localTask.deadline).toLocaleDateString()}
+              {new Date(task.deadline).toLocaleDateString()}
             </p>
           </div>
         </div>
@@ -295,7 +287,7 @@ export function TaskDetails({ task }: TaskDetailsProps) {
             Assigned to
           </p>
           <div className="flex -space-x-2">
-            {localTask.members.map((m) => {
+            {task.members.map((m) => {
               const name = m.name ?? m.address;
               const initials = name
                 .split(" ")
@@ -316,10 +308,10 @@ export function TaskDetails({ task }: TaskDetailsProps) {
         </div>
 
         {/* Action Button */}
-        {isAssigned && localTask.status === "not_started" && (
+        {isAssigned && task.status === "not_started" && (
           <Button onClick={startTask}>Start Task</Button>
         )}
-        {isAssigned && localTask.status === "in_progress" && (
+        {isAssigned && task.status === "in_progress" && (
           <Button onClick={finishTask}>Finish Task</Button>
         )}
         {canApprove && (
