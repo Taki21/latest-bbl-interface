@@ -162,7 +162,7 @@ export default function Onboarding() {
         <section className="mx-auto flex flex-col items-center gap-4">
           {/* <Rocket className="h-9 w-9 text-primary animate-bounce-slow" /> */}
           <Button size="lg" onClick={() => setShowGetStarted(true)}>
-            Join Community
+            Join a Community
           </Button>
         </section>
       </main>
