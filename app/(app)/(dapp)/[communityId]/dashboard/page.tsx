@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { formatEther } from "viem";
+import { useParams } from "next/navigation";
+import { useAccount } from "wagmi";
 
 import StatCards      from "./_components/stat-cards";
 import MembersWidget  from "./_components/members-widget";
@@ -26,11 +26,13 @@ interface Community {
 
 export default function DashboardPage() {
   const { communityId } = useParams<{ communityId: string }>();
-  const router = useRouter();
+  const { address } = useAccount();
 
   const [community, setCommunity] = useState<Community | null>(null);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
+  const [myBalance, setMyBalance]       = useState("0");
+  const [myAllocation, setMyAllocation] = useState("0");
 
   useEffect(() => {
     if (!communityId) return;
@@ -40,10 +42,19 @@ export default function DashboardPage() {
         if (!res.ok) throw new Error((await res.json()).error || res.statusText);
         return res.json();
       })
-      .then((data: Community) => setCommunity(data))
+      .then((data: Community) => {
+        setCommunity(data);
+        const me = data.members.find(
+          (m) => m.user.address.toLowerCase() === address?.toLowerCase()
+        );
+        if (me) {
+          setMyBalance(me.balance.toString());
+          setMyAllocation(me.allocation.toString());
+        }
+      })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [communityId]);
+  }, [communityId, address]);
 
   if (loading) return <p className="p-4">Loading dashboard…</p>;
   if (error)   return <p className="p-4 text-destructive">Error: {error}</p>;
@@ -62,10 +73,11 @@ export default function DashboardPage() {
       </header>
 
       <StatCards
-        balance  ={community.balance}
-        members  ={membersCount}
-        projects ={projectsCount}
-        tasks    ={tasksCount}
+        balance    ={myBalance}
+        allocation ={myAllocation}
+        members    ={membersCount}
+        projects   ={projectsCount}
+        tasks      ={tasksCount}
       />
 
       <div className="grid gap-8 lg:grid-cols-2">
