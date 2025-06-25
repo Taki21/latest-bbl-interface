@@ -57,6 +57,7 @@ export function TaskDetails({ task }: TaskDetailsProps) {
   const { address: currentAddress } = useAccount();
   const router = useRouter();
 
+
   const [role, setRole] = useState<string | null>(null);
   const [meId, setMeId] = useState<string | null>(null);
   const [projCreatorId, setProjCreatorId] = useState<string | null>(null);
@@ -123,6 +124,56 @@ export function TaskDetails({ task }: TaskDetailsProps) {
     .join("")
     .toUpperCase();
 
+  const isAssigned = task.members.some(
+    (m) => m.address.toLowerCase() === currentAddress?.toLowerCase()
+  );
+
+  const canApprove =
+    task.status === "under_review" &&
+    (role === "Professor" || role === "Owner" || meId === projTeamLeaderId);
+
+  const startTask = async () => {
+    const res = await fetch(
+      `/api/community/${communityId}/projects/${projectId}/tasks/${task.id}/start`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: currentAddress }),
+      }
+    );
+    if (res.ok) {
+      router.refresh();
+    }
+  };
+
+  const finishTask = async () => {
+    const res = await fetch(
+      `/api/community/${communityId}/projects/${projectId}/tasks/${task.id}/finish`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: currentAddress }),
+      }
+    );
+    if (res.ok) {
+      router.refresh();
+    }
+  };
+
+  const approveTask = async () => {
+    const res = await fetch(
+      `/api/community/${communityId}/projects/${projectId}/tasks/${task.id}/approve`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: currentAddress }),
+      }
+    );
+    if (res.ok) {
+      router.refresh();
+    }
+  };
+
   return (
     <Card className="relative">
       {/* 3-dots menu */}
@@ -144,11 +195,11 @@ export function TaskDetails({ task }: TaskDetailsProps) {
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={() =>
-                router.push(
-                  `/${communityId}/projects/${projectId}/tasks/${task.id}/edit`
-                )
-              }
+                onClick={() =>
+                  router.push(
+                    `/${communityId}/projects/${projectId}/tasks/${task.id}/edit`
+                  )
+                }
             >
               <Pencil className="mr-2 h-4 w-4" />
               Edit
@@ -255,6 +306,17 @@ export function TaskDetails({ task }: TaskDetailsProps) {
             })}
           </div>
         </div>
+
+        {/* Action Button */}
+        {isAssigned && task.status === "not_started" && (
+          <Button onClick={startTask}>Start Task</Button>
+        )}
+        {isAssigned && task.status === "in_progress" && (
+          <Button onClick={finishTask}>Finish Task</Button>
+        )}
+        {canApprove && (
+          <Button onClick={approveTask}>Approve</Button>
+        )}
       </CardContent>
     </Card>
   );
