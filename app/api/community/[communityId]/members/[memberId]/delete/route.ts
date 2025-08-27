@@ -13,7 +13,7 @@ export async function POST(
 
     const caller = await prisma.member.findFirst({
       where: { communityId: params.communityId, user: { address } },
-      select: { role: true },
+      select: { id: true, role: true },
     });
     if (!caller)
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
@@ -22,6 +22,25 @@ export async function POST(
       caller.role === MemberRole.Owner || caller.role === MemberRole.Professor;
     if (!isAdmin)
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+
+    if (caller.id === params.memberId)
+      return NextResponse.json(
+        { error: "Cannot remove yourself" },
+        { status: 400 }
+      );
+
+    await prisma.project.updateMany({
+      where: { teamLeaderId: params.memberId },
+      data: { teamLeaderId: caller.id },
+    });
+    await prisma.project.updateMany({
+      where: { creatorId: params.memberId },
+      data: { creatorId: caller.id },
+    });
+    await prisma.task.updateMany({
+      where: { creatorId: params.memberId },
+      data: { creatorId: caller.id },
+    });
 
     await prisma.member.delete({ where: { id: params.memberId } });
     return NextResponse.json({ ok: true });
