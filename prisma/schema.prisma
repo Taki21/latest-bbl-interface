@@ -41,7 +41,7 @@ model User {
   id          String      @id @default(uuid())
   name        String
   email       String      @unique
-  address   String   @unique
+  address     String      @unique
   balance     BigInt
 
   /* one-to-many */
@@ -95,6 +95,9 @@ model Member {
   /* FK → Community */
   communityId  String
   community    Community  @relation(fields: [communityId], references: [id])
+
+  /* NEW: per-community display name */
+  name         String?    // nullable for safe prod migration; make required later if you want
 
   balance      BigInt
   role         MemberRole
