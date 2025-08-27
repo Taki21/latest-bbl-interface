@@ -4,49 +4,84 @@ import { prisma, safeJson } from "@/lib/prisma";
 
 export async function GET(
   _req: Request,
-  ctx: { params: Promise<{ communityId: string }> }
+  { params }: { params: { communityId: string } }
 ) {
-  // ✅ Await the params promise before using it
-  const { communityId } = await ctx.params;
+  const { communityId } = params;
 
   try {
-    // Fetch each member's core info plus their current allocation
     const raw = await prisma.member.findMany({
       where: { communityId },
       select: {
-        id:         true,
-        role:       true,
-        balance:    true,
-        allocation: true,      // BigInt field on Member
-        name:       true,
+        id: true,
+        role: true,
+        balance: true,
+        allocation: true,
+        name: true,
         user: {
           select: {
-            id:      true,
-            name:    true,
+            id: true,
+            name: true,
             address: true,
-            email:   true,
+            email: true,
           },
         },
       },
       orderBy: { role: "asc" },
     });
 
-    // Return JSON–safe data
     const members = raw.map((m) => ({
-      id:         m.id,
-      role:       m.role,
-      balance:    m.balance,      // BigInt
-      allocation: m.allocation,   // BigInt
-      name:       m.name,
-      user:       m.user,
+      id: m.id,
+      role: m.role,
+      balance: m.balance,
+      allocation: m.allocation,
+      name: (m as any).name ?? (m as any).user?.name ?? null,
+      user: m.user,
     }));
 
     return NextResponse.json(safeJson(members), { status: 200 });
   } catch (err) {
-    console.error("GET /api/community/[communityId]/members error", err);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    console.error("GET /api/community/[communityId]/members primary query failed", err);
+
+    try {
+      // Fallback for older databases without the `name` column
+      const raw = await prisma.member.findMany({
+        where: { communityId },
+        select: {
+          id: true,
+          role: true,
+          balance: true,
+          allocation: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              address: true,
+              email: true,
+            },
+          },
+        },
+        orderBy: { role: "asc" },
+      });
+
+      const members = raw.map((m) => ({
+        id: m.id,
+        role: m.role,
+        balance: m.balance,
+        allocation: m.allocation,
+        name: (m as any).user?.name ?? null,
+        user: m.user,
+      }));
+
+      return NextResponse.json(safeJson(members), { status: 200 });
+    } catch (err2) {
+      console.error(
+        "GET /api/community/[communityId]/members fallback query failed",
+        err2
+      );
+      return NextResponse.json(
+        { error: "Internal server error" },
+        { status: 500 }
+      );
+    }
   }
 }
