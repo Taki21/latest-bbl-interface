@@ -18,6 +18,7 @@ export async function GET(
         role:       true,
         balance:    true,
         allocation: true,      // BigInt field on Member
+        name:       true,
         user: {
           select: {
             id:      true,
@@ -36,6 +37,7 @@ export async function GET(
       role:       m.role,
       balance:    m.balance,      // BigInt
       allocation: m.allocation,   // BigInt
+      name:       m.name,
       user:       m.user,
     }));
 

@@ -86,6 +86,7 @@ export function AppSidebar({ communityId, ...props }: AppSidebarProps) {
     { title: "Dashboard", url: `/${communityId}/dashboard`, icon: React.Fragment },
     { title: "Projects",  url: `/${communityId}/projects`,  icon: React.Fragment },
     { title: "Members",   url: `/${communityId}/members`,   icon: React.Fragment },
+    { title: "Settings",  url: `/${communityId}/settings`,  icon: React.Fragment },
   ];
 
   // Treasury link for Owners only

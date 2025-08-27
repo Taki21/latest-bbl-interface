@@ -76,6 +76,7 @@ export default function ProjectsPage() {
               project={p}
               currentAddress={address}
               isAdmin={isAdmin}
+              onDelete={refresh}
             />
           ))}
         </div>

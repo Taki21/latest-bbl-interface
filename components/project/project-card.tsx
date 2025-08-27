@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { formatEther } from "viem";
-import { MoreVertical, Pencil, Share2 } from "lucide-react";
+import { MoreVertical, Pencil, Share2, ListTodo, Trash2 } from "lucide-react";
 
 import {
   Card,
   CardHeader,
   CardTitle,
   CardContent,
+  CardFooter,
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -40,6 +40,7 @@ export interface ProjectCardProps {
   project: BaseProject;
   currentAddress?: string | null;
   isAdmin: boolean;
+  onDelete?: () => void;
 }
 
 export function ProjectCard({
@@ -47,6 +48,7 @@ export function ProjectCard({
   project,
   currentAddress,
   isAdmin,
+  onDelete,
 }: ProjectCardProps) {
   const [copied, setCopied] = useState(false);
 
@@ -58,6 +60,7 @@ export function ProjectCard({
     currentAddress.toLowerCase() === creatorAddr.toLowerCase();
 
   const canEdit = isAdmin || meIsCreator;
+  const canDelete = canEdit;
   const href = `/${communityId}/projects/${project.id}`;
   const editHref = `/${communityId}/projects/${project.id}/edit`;
 
@@ -90,18 +93,47 @@ export function ProjectCard({
             <MoreVertical className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-40">
+        <DropdownMenuContent align="end" className="w-48">
           {canEdit && (
-            <>
-              <DropdownMenuItem asChild>
-                <Link href={editHref} className="flex items-center">
-                  <Pencil className="mr-2 h-4 w-4" />
-                  Edit
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-            </>
+            <DropdownMenuItem asChild>
+              <Link href={editHref} className="flex items-center">
+                <Pencil className="mr-2 h-4 w-4" />
+                Edit
+              </Link>
+            </DropdownMenuItem>
           )}
+          <DropdownMenuItem asChild>
+            <Link href={href} className="flex items-center">
+              <ListTodo className="mr-2 h-4 w-4" />
+              View Tasks
+            </Link>
+          </DropdownMenuItem>
+          {canDelete && (
+            <DropdownMenuItem
+              onClick={async () => {
+                if (!currentAddress) return;
+                if (!confirm("Delete project?")) return;
+                try {
+                  const res = await fetch(
+                    `/api/community/${communityId}/projects/${project.id}/delete`,
+                    {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ address: currentAddress }),
+                    }
+                  );
+                  if (res.ok) onDelete?.();
+                } catch (e) {
+                  console.error(e);
+                }
+              }}
+              className="text-destructive"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuSeparator />
           <DropdownMenuItem onClick={share}>
             <Share2 className="mr-2 h-4 w-4" />
             {copied ? "Copied!" : "Share"}
@@ -149,6 +181,11 @@ export function ProjectCard({
           </div>
         </CardContent>
       </Link>
+      <CardFooter>
+        <Button asChild className="w-full">
+          <Link href={href}>View Tasks</Link>
+        </Button>
+      </CardFooter>
     </Card>
   );
 }

@@ -22,6 +22,7 @@ import {
 interface CommunityMember {
   id: string;
   role: string;
+  name?: string | null;
   user: { name: string | null; address: string };
 }
 
@@ -228,7 +229,7 @@ export default function TaskForm({
                     checked={memberIds.includes(m.id)}
                     onCheckedChange={() => toggleMember(m.id)}
                   />
-                  <span>{m.user.name || m.user.address}</span>
+                  <span>{m.name || m.user.name || m.user.address}</span>
                 </label>
               ))}
             </div>

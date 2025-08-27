@@ -8,6 +8,7 @@ interface Props {
   members: {
     id: string;
     role: string;
+    name?: string | null;
     user: { name: string | null; address: string };
   }[];
 }
@@ -21,7 +22,7 @@ export default function MembersWidget({ members }: Props) {
       </CardHeader>
       <CardContent className="space-y-3">
         {sorted.slice(0, 6).map((m) => {
-          const initials = (m.user.name || m.user.address)
+          const initials = (m.name || m.user.name || m.user.address)
             .split(" ")
             .map((s) => s[0])
             .join("")
@@ -34,7 +35,7 @@ export default function MembersWidget({ members }: Props) {
               </Avatar>
               <div className="flex-1">
                 <p className="truncate text-sm font-medium">
-                  {m.user.name || m.user.address}
+                  {m.name || m.user.name || m.user.address}
                 </p>
                 <p className="text-xs text-muted-foreground">{m.role}</p>
               </div>

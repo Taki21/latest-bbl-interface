@@ -11,6 +11,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 interface Member {
   id: string;
   role: string;
+  name?: string | null;
   user: { name: string | null; address: string };
 }
 
@@ -115,14 +116,15 @@ export default function TreasuryPage() {
           <Select value={recipient} onValueChange={setRecipient}>
             <SelectTrigger className="w-full">
               {recipient
-                ? members.find((m) => m.id === recipient)?.user.name ??
+                ? members.find((m) => m.id === recipient)?.name ||
+                  members.find((m) => m.id === recipient)?.user.name ||
                   members.find((m) => m.id === recipient)?.user.address
                 : "Select Professor / Team Leader"}
             </SelectTrigger>
             <SelectContent>
               {members.map((m) => (
                 <SelectItem key={m.id} value={m.id}>
-                  {m.user.name || m.user.address}
+                  {m.name || m.user.name || m.user.address}
                 </SelectItem>
               ))}
             </SelectContent>

@@ -16,9 +16,9 @@ import { MemberRole } from "@prisma/client";
  */
 export async function POST(req: Request) {
   try {
-    const { joinCode, address } = await req.json();
+    const { joinCode, address, name } = await req.json();
 
-    if (!joinCode || !address) {
+    if (!joinCode || !address || !name) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -55,7 +55,13 @@ export async function POST(req: Request) {
           communityId: community.id,
           balance: BigInt(0),
           role: MemberRole.Default,
+          name,
         },
+      });
+    } else if (!existing.name) {
+      await prisma.member.update({
+        where: { id: existing.id },
+        data: { name },
       });
     }
 

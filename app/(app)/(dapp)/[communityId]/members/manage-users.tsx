@@ -24,12 +24,21 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from "@/components/ui/tooltip";
+import { Pencil, Trash2 } from "lucide-react";
 
 interface Member {
   id: string;
   role: string;
   balance: string;
-  allocated: string;
+  allocation: string;
+  name: string | null;
   user: { id: string; name: string | null; address: string; email: string | null };
 }
 
@@ -66,7 +75,7 @@ export default function MembersPage() {
     if (communityId) fetchMembers();
   }, [communityId]);
 
-  const isAdmin = myRole === "Owner"; // Only Owners may change roles
+  const isAdmin = myRole === "Owner" || myRole === "Professor";
 
   const changeRole = async (memberId: string, newRole: string) => {
     setUpdatingId(memberId);
@@ -85,6 +94,43 @@ export default function MembersPage() {
       alert(err.message);
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  const editName = async (member: Member) => {
+    const name = prompt("New name", member.name ?? "");
+    if (!name) return;
+    try {
+      const res = await fetch(
+        `/api/community/${communityId}/members/${member.id}/edit`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, address }),
+        }
+      );
+      if (!res.ok) throw new Error((await res.json()).error || "Error");
+      await fetchMembers();
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const removeMember = async (memberId: string) => {
+    if (!confirm("Remove member?")) return;
+    try {
+      const res = await fetch(
+        `/api/community/${communityId}/members/${memberId}/delete`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ address }),
+        }
+      );
+      if (!res.ok) throw new Error((await res.json()).error || "Error");
+      await fetchMembers();
+    } catch (err: any) {
+      alert(err.message);
     }
   };
 
@@ -111,7 +157,43 @@ export default function MembersPage() {
                 m.user.address.toLowerCase() === address?.toLowerCase();
               return (
                 <TableRow key={m.id}>
-                  <TableCell>{m.user.name ?? "—"}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center space-x-2">
+                      <span>{m.name ?? "—"}</span>
+                      {isAdmin && (
+                        <>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => editName(m)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Edit</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => removeMember(m.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Remove</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell className="font-mono text-xs truncate max-w-[140px]">
                     {m.user.address}
                   </TableCell>
@@ -138,11 +220,9 @@ export default function MembersPage() {
                       <Badge variant="secondary">{pretty(m.role)}</Badge>
                     )}
                   </TableCell>
+                  <TableCell className="text-right">{m.balance} TOKEN</TableCell>
                   <TableCell className="text-right">
-                    {m.balance} TOKEN
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {m.allocated} TOKEN
+                    {m.allocation} TOKEN
                   </TableCell>
                 </TableRow>
               );
