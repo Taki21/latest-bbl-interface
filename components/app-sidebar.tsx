@@ -68,13 +68,18 @@ export function AppSidebar({ communityId, ...props }: AppSidebarProps) {
   // Fetch my community role
   useEffect(() => {
     if (!communityId || !address) return;
-    fetch(`/api/community/${communityId}/members`)
-      .then((r) => r.json())
+    fetch(`/api/community/${communityId}/members`, { cache: "no-store" })
+      .then((r) => {
+        if (!r.ok) throw new Error("Failed to load members");
+        return r.json();
+      })
       .then((data: any) => {
         const list = Array.isArray(data)
           ? data
           : Array.isArray(data?.members)
           ? data.members
+          : Array.isArray(data?.data)
+          ? data.data
           : [];
         const me = list.find(
           (m) => m.user.address.toLowerCase() === address.toLowerCase()
@@ -84,7 +89,7 @@ export function AppSidebar({ communityId, ...props }: AppSidebarProps) {
       .catch(console.error);
   }, [communityId, address]);
 
-  const isOwner = role === "Owner";
+  const isAdmin = role === "Owner" || role === "Professor";
 
   // Primary nav
   const navMain: NavItem[] = [
@@ -94,8 +99,8 @@ export function AppSidebar({ communityId, ...props }: AppSidebarProps) {
     { title: "Settings",  url: `/${communityId}/settings`,  icon: React.Fragment },
   ];
 
-  // Treasury link for Owners only
-  const navProjects: ProjectNav[] = isOwner
+  // Treasury link for admins
+  const navProjects: ProjectNav[] = isAdmin
     ? [{ name: "Treasury", url: `/${communityId}/treasury`, icon: Coins }]
     : [];
 

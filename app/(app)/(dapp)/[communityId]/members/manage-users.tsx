@@ -61,13 +61,18 @@ export default function MembersPage() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const fetchMembers = () =>
-    fetch(`/api/community/${communityId}/members`)
-      .then((r) => r.json())
+    fetch(`/api/community/${communityId}/members`, { cache: "no-store" })
+      .then((r) => {
+        if (!r.ok) throw new Error("Failed to load members");
+        return r.json();
+      })
       .then((data: any) => {
         const list: Member[] = Array.isArray(data)
           ? data
           : Array.isArray(data?.members)
           ? data.members
+          : Array.isArray(data?.data)
+          ? data.data
           : [];
         setMembers(list);
         const me = list.find(
@@ -75,11 +80,14 @@ export default function MembersPage() {
         );
         setMyRole(me?.role ?? null);
       })
-      .catch(() => setMembers([]));
+      .catch((err) => {
+        console.error(err);
+        setMembers([]);
+      });
 
   useEffect(() => {
     if (communityId) fetchMembers();
-  }, [communityId]);
+  }, [communityId, address]);
 
   const isAdmin = myRole === "Owner" || myRole === "Professor";
 
