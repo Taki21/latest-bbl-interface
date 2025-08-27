@@ -70,8 +70,13 @@ export function AppSidebar({ communityId, ...props }: AppSidebarProps) {
     if (!communityId || !address) return;
     fetch(`/api/community/${communityId}/members`)
       .then((r) => r.json())
-      .then((members: any[]) => {
-        const me = members.find(
+      .then((data: any) => {
+        const list = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.members)
+          ? data.members
+          : [];
+        const me = list.find(
           (m) => m.user.address.toLowerCase() === address.toLowerCase()
         );
         setRole(me?.role ?? null);

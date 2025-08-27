@@ -63,13 +63,19 @@ export default function MembersPage() {
   const fetchMembers = () =>
     fetch(`/api/community/${communityId}/members`)
       .then((r) => r.json())
-      .then((data: Member[]) => {
-        setMembers(data);
-        const me = data.find(
+      .then((data: any) => {
+        const list: Member[] = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.members)
+          ? data.members
+          : [];
+        setMembers(list);
+        const me = list.find(
           (m) => m.user.address.toLowerCase() === address?.toLowerCase()
         );
         setMyRole(me?.role ?? null);
-      });
+      })
+      .catch(() => setMembers([]));
 
   useEffect(() => {
     if (communityId) fetchMembers();

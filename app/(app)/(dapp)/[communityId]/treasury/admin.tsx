@@ -33,9 +33,16 @@ export default function TreasuryPage() {
   const fetchMembers = () =>
     fetch(`/api/community/${communityId}/members`)
       .then((r) => r.json())
-      .then((m: Member[]) =>
-        setMembers(m.filter((x) => x.role === "Professor" || x.role === "Team_Leader"))
-      );
+      .then((data: any) => {
+        const list: Member[] = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.members)
+          ? data.members
+          : [];
+        setMembers(
+          list.filter((x) => x.role === "Professor" || x.role === "Team_Leader")
+        );
+      });
 
   useEffect(() => {
     if (communityId) {

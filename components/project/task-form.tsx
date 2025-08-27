@@ -61,7 +61,14 @@ export default function TaskForm({
   useEffect(() => {
     fetch(`/api/community/${communityId}/members`)
       .then((r) => r.json())
-      .then((data: CommunityMember[]) => setMembers(data))
+      .then((data: any) => {
+        const list: CommunityMember[] = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.members)
+          ? data.members
+          : [];
+        setMembers(list);
+      })
       .catch(console.error);
   }, [communityId]);
 

@@ -73,9 +73,14 @@ export default function ProjectForm({
   useEffect(() => {
     fetch(`/api/community/${communityId}/members`)
       .then((r) => r.json())
-      .then((data: Member[]) => {
-        setMembers(data);
-        if (data.length) setTeamLeaderId(data[0].id);
+      .then((data: any) => {
+        const list: Member[] = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.members)
+          ? data.members
+          : [];
+        setMembers(list);
+        if (list.length) setTeamLeaderId(list[0].id);
       })
       .catch((err) => console.error(err));
   }, [communityId]);

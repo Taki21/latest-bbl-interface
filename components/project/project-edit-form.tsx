@@ -127,7 +127,12 @@ export default function ProjectEditForm({
           teamLeaderId: string;
           members: { id: string }[];
         };
-        const mems = (await memRes.json()) as Member[];
+        const memData = await memRes.json();
+        const mems: Member[] = Array.isArray(memData)
+          ? memData
+          : Array.isArray(memData?.members)
+          ? memData.members
+          : [];
 
         // Populate form defaults
         setTitle(proj.title);
