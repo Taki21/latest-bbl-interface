@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 export interface JoinCommunityDialogProps {
   open: boolean;
@@ -26,6 +27,7 @@ export function JoinCommunityDialog({
   const { address } = useAccount();
 
   const [code, setCode] = useState(Array(8).fill(""));
+  const [name, setName] = useState("");
 
   const handleCodeChange = (index: number, value: string) => {
     if (value.length > 1) return;
@@ -55,7 +57,7 @@ export function JoinCommunityDialog({
       const res = await fetch("/api/community/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ joinCode, address }),
+        body: JSON.stringify({ joinCode, address, name }),
       });
 
       if (!res.ok) {
@@ -83,6 +85,15 @@ export function JoinCommunityDialog({
 
         <form onSubmit={joinCommunity} className="space-y-6">
           <div className="space-y-4">
+            <Label htmlFor="name">Your Name</Label>
+            <Input
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-4">
             <Label htmlFor="code-0">Community Code</Label>
             <div className="flex justify-center space-x-2">
               {code.map((digit, index) => (
@@ -107,7 +118,7 @@ export function JoinCommunityDialog({
             <Button
               type="submit"
               className="w-full"
-              disabled={code.some((d) => !d)}
+              disabled={code.some((d) => !d) || !name.trim()}
             >
               Join Community
             </Button>

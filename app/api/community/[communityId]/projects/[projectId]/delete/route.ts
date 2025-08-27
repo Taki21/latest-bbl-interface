@@ -14,7 +14,7 @@ export async function POST(
     /* auth */
     const project = await prisma.project.findUnique({
       where: { id: ctx.params.projectId },
-      select: { creator: { select: { address: true } } },
+      select: { creator: { select: { user: { select: { address: true } } } } },
     });
     if (!project)
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
@@ -30,11 +30,12 @@ export async function POST(
     const isAdmin =
       caller?.role === MemberRole.Owner || caller?.role === MemberRole.Professor;
     const isCreator =
-      project.creator.address.toLowerCase() === address.toLowerCase();
+      project.creator.user.address.toLowerCase() === address.toLowerCase();
 
     if (!isAdmin && !isCreator)
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
+    await prisma.task.deleteMany({ where: { projectId: ctx.params.projectId } });
     await prisma.project.delete({ where: { id: ctx.params.projectId } });
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (err) {

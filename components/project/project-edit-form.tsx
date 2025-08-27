@@ -25,6 +25,7 @@ interface Member {
   role: string;
   allocation: string;         // BigInt serialized
   balance: string;            // task/project balance? (unused here)
+  name?: string | null;
   user: { name: string | null; address: string };
   community: { id: string };
 }
@@ -79,6 +80,7 @@ export default function ProjectEditForm({
     );
 
   const memberLabel = (id: string) =>
+    members.find((m) => m.id === id)?.name ||
     members.find((m) => m.id === id)?.user.name ||
     members.find((m) => m.id === id)?.user.address ||
     "—";
@@ -125,7 +127,12 @@ export default function ProjectEditForm({
           teamLeaderId: string;
           members: { id: string }[];
         };
-        const mems = (await memRes.json()) as Member[];
+        const memData = await memRes.json();
+        const mems: Member[] = Array.isArray(memData)
+          ? memData
+          : Array.isArray(memData?.members)
+          ? memData.members
+          : [];
 
         // Populate form defaults
         setTitle(proj.title);
@@ -134,7 +141,14 @@ export default function ProjectEditForm({
         setStatus(proj.status);
         setBudget(proj.balance.toString());
         setTeamLeaderId(proj.teamLeaderId);
-        setMemberIds(proj.members.map((m) => m.id));
+
+        // proj.members contains user objects; map to Member IDs
+        const userIds = proj.members.map((m) => m.id);
+        setMemberIds(
+          mems
+            .filter((m) => userIds.includes(m.user.id))
+            .map((m) => m.id)
+        );
 
         setMembers(mems);
       } catch (err: any) {
@@ -249,7 +263,7 @@ export default function ProjectEditForm({
         <SelectContent>
           {members.map((m) => (
             <SelectItem key={m.id} value={m.id}>
-              {m.user.name || m.user.address}
+              {m.name || m.user.name || m.user.address}
             </SelectItem>
           ))}
         </SelectContent>
@@ -274,7 +288,7 @@ export default function ProjectEditForm({
                 checked={memberIds.includes(m.id)}
                 onCheckedChange={() => toggleMember(m.id)}
               />
-              <span>{m.user.name || m.user.address}</span>
+              <span>{m.name || m.user.name || m.user.address}</span>
             </label>
           ))}
         </PopoverContent>

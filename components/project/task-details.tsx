@@ -69,8 +69,13 @@ export function TaskDetails({ task, refresh }: TaskDetailsProps) {
     if (!communityId || !currentAddress) return;
     fetch(`/api/community/${communityId}/members`)
       .then((r) => r.json())
-      .then((members: any[]) => {
-        const me = members.find(
+      .then((data: any) => {
+        const list = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.members)
+          ? data.members
+          : [];
+        const me = list.find(
           (m) =>
             m.user.address.toLowerCase() ===
             currentAddress.toLowerCase()

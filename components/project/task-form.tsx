@@ -22,6 +22,7 @@ import {
 interface CommunityMember {
   id: string;
   role: string;
+  name?: string | null;
   user: { name: string | null; address: string };
 }
 
@@ -60,7 +61,14 @@ export default function TaskForm({
   useEffect(() => {
     fetch(`/api/community/${communityId}/members`)
       .then((r) => r.json())
-      .then((data: CommunityMember[]) => setMembers(data))
+      .then((data: any) => {
+        const list: CommunityMember[] = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.members)
+          ? data.members
+          : [];
+        setMembers(list);
+      })
       .catch(console.error);
   }, [communityId]);
 
@@ -228,7 +236,7 @@ export default function TaskForm({
                     checked={memberIds.includes(m.id)}
                     onCheckedChange={() => toggleMember(m.id)}
                   />
-                  <span>{m.user.name || m.user.address}</span>
+                  <span>{m.name || m.user.name || m.user.address}</span>
                 </label>
               ))}
             </div>

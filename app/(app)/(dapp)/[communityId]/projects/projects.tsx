@@ -44,8 +44,13 @@ export default function ProjectsPage() {
     if (!communityId || !address) return;
     fetch(`/api/community/${communityId}/members`)
       .then((r) => r.json())
-      .then((members) => {
-        const me = members.find(
+      .then((data) => {
+        const list = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.members)
+          ? data.members
+          : [];
+        const me = list.find(
           (m: any) => m.user?.address?.toLowerCase() === address.toLowerCase()
         );
         setRole(me?.role ?? null);
@@ -76,6 +81,7 @@ export default function ProjectsPage() {
               project={p}
               currentAddress={address}
               isAdmin={isAdmin}
+              onDelete={refresh}
             />
           ))}
         </div>

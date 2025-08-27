@@ -20,6 +20,8 @@ interface Member {
   role: string;
   allocation: string; // BigInt serialized
   community: { id: string; name: string; joinCode: string | null };
+  name?: string | null;
+  user?: { name: string | null; address: string };
 }
 
 interface ProjectFormProps {
@@ -71,9 +73,14 @@ export default function ProjectForm({
   useEffect(() => {
     fetch(`/api/community/${communityId}/members`)
       .then((r) => r.json())
-      .then((data: Member[]) => {
-        setMembers(data);
-        if (data.length) setTeamLeaderId(data[0].id);
+      .then((data: any) => {
+        const list: Member[] = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.members)
+          ? data.members
+          : [];
+        setMembers(list);
+        if (list.length) setTeamLeaderId(list[0].id);
       })
       .catch((err) => console.error(err));
   }, [communityId]);
@@ -187,7 +194,7 @@ export default function ProjectForm({
           </option>
           {members.map((m) => (
             <option key={m.id} value={m.id}>
-              {m.user.name || m.user.address}
+              {m.name || m.user?.name || m.user?.address}
             </option>
           ))}
         </select>
@@ -214,9 +221,9 @@ export default function ProjectForm({
                   checked={memberIds.includes(m.id)}
                   onCheckedChange={() => toggleMember(m.id)}
                 />
-                <span>{m.user.name || m.user.address}</span>
-              </label>
-            ))}
+                <span>{m.name || m.user?.name || m.user?.address}</span>
+                </label>
+              ))}
           </PopoverContent>
         </Popover>
       </div>
