@@ -34,7 +34,7 @@ export default function DappLayout({ children }) {
 
   useEffect(() => {
     if (!isConnected) {
-      router.push("/login");
+      router.push("/");
     }
   }, [isConnected, router]);
 

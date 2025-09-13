@@ -30,12 +30,14 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { useDisconnect } from "wagmi"
+import { usePrivy } from "@privy-io/react-auth"
 
 export function NavUser({
   user,
 }) {
   const { isMobile } = useSidebar()
   const { disconnect } = useDisconnect()
+  const { logout } = usePrivy()
 
   return (
     <SidebarMenu>
@@ -98,7 +100,7 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => disconnect()}>
+            <DropdownMenuItem onClick={() => { logout(); disconnect(); }}>
               <LogOut />
               Log out
             </DropdownMenuItem>

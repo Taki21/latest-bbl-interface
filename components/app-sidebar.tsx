@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useAccount } from "wagmi";
-import { useWeb3Auth } from "@/context/Web3AuthContext";
+import { usePrivy } from "@privy-io/react-auth";
 import { useWalletClient } from "wagmi";
 import {
   Sidebar,
@@ -37,7 +37,7 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 export function AppSidebar({ communityId, ...props }: AppSidebarProps) {
   const { address } = useAccount();
   const { data: walletClient } = useWalletClient();
-  const web3Auth = useWeb3Auth();
+  const { user: privyUser } = usePrivy();
 
   const [user, setUser] = useState({
     name: "Guest",
@@ -46,24 +46,15 @@ export function AppSidebar({ communityId, ...props }: AppSidebarProps) {
   });
   const [role, setRole] = useState<string | null>(null);
 
-  // Load web3Auth profile for avatar
   useEffect(() => {
-    async function loadProfile() {
-      try {
-        const info = await web3Auth?.getUserInfo();
-        if (info) {
-          setUser({
-            name: info.name || "Anonymous",
-            email: info.email || "",
-            avatar: info.profileImage || "",
-          });
-        }
-      } catch {
-        // ignore
-      }
+    if (privyUser) {
+      setUser({
+        name: privyUser.name || "Anonymous",
+        email: privyUser.email || "",
+        avatar: privyUser.profilePictureUrl || "",
+      });
     }
-    loadProfile();
-  }, [walletClient, web3Auth]);
+  }, [privyUser, walletClient]);
 
   // Fetch my community role
   useEffect(() => {

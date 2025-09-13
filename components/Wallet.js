@@ -16,15 +16,14 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 import { useEffect, useState } from "react"
-import { useWeb3Auth } from "@/context/Web3AuthContext"
 import { useDisconnect, useWalletClient } from "wagmi"
-import { data } from "autoprefixer"
+import { usePrivy } from "@privy-io/react-auth"
 
 export default function WalletButton() {
 
     const { disconnect } = useDisconnect();
     const { data: walletClient } = useWalletClient();
-    let web3Auth = useWeb3Auth();
+    const { user: privyUser } = usePrivy();
 
     const [user, setUser] = useState({
         name: "shadcn",
@@ -33,23 +32,14 @@ export default function WalletButton() {
     });
 
     useEffect(() => {
-        const getUserInfo = async () => {
-            try {
-                var userInfo = await web3Auth?.getUserInfo();
-            } catch (e) {
-                console.log("Cannot get userInfo first time, likely web3Auth not fully updated");
-            }
-            console.log("/app, userInfo", userInfo);
-            if (userInfo) {
-                setUser({
-                    name: userInfo.name,
-                    email: userInfo.email,
-                    avatar: userInfo.profileImage,
-                });
-            }
-        };
-        getUserInfo();
-    }, [walletClient]);
+        if (privyUser) {
+            setUser({
+                name: privyUser.name || "",
+                email: privyUser.email || "",
+                avatar: privyUser.profilePictureUrl || "",
+            });
+        }
+    }, [privyUser, walletClient]);
 
     return (
         <DropdownMenu>

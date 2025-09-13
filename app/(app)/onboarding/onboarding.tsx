@@ -7,7 +7,7 @@ import { useAccount, useWalletClient } from "wagmi";
 import { Building2, Rocket }    from "lucide-react";
 import WelcomePage              from "./welcome";
 import GetStartedPage           from "./get-started";
-import { useWeb3Auth }          from "@/context/Web3AuthContext";
+import { usePrivy }             from "@privy-io/react-auth";
 
 import {
   Card,
@@ -43,7 +43,7 @@ interface UserObj {
 export default function Onboarding() {
   const { address, isConnected } = useAccount();
   const { data: walletClient }   = useWalletClient();
-  const web3Auth                 = useWeb3Auth();
+  const { user: privyUser }      = usePrivy();
   const router                   = useRouter();
 
   // ─── Hooks (no conditional) ───────────────────────────────────────
@@ -60,7 +60,7 @@ export default function Onboarding() {
     (async () => {
       try {
         // ensure user record exists
-        const profile = await web3Auth?.getUserInfo().catch(() => null);
+        const profile = privyUser;
         if (profile) {
           await fetch("/api/user/create", {
             method:  "POST",
@@ -99,7 +99,7 @@ export default function Onboarding() {
         setLoading(false);
       }
     })();
-  }, [isConnected, walletClient, address, web3Auth]);
+  }, [isConnected, walletClient, address, privyUser]);
 
   // ─── Early returns ───────────────────────────────────────────────
   if (!mounted) return null;

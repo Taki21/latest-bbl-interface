@@ -5,14 +5,13 @@ import {
 
 import { relayerClient } from "./config";
 
-import { IProvider } from "@web3auth/base";
 
 import { bsc } from "viem/chains";
 import { createWalletClient, custom, Hex, parseSignature } from "viem";
 import { hashAuthorization, verifyAuthorization } from "viem/utils";
 import { SignAuthorizationReturnType } from "viem/accounts";
 
-export const getAccount = async (provider: IProvider): Promise<any> => {
+export const getAccount = async (provider: any): Promise<any> => {
     try {
         const walletClient = createWalletClient({
             chain: bsc,
@@ -27,7 +26,7 @@ export const getAccount = async (provider: IProvider): Promise<any> => {
     }
 }
 
-export const signAuthorization = async (provider: IProvider): Promise<any> => {
+export const signAuthorization = async (provider: any): Promise<any> => {
     try {
         const account = await getAccount(provider);
 
@@ -71,7 +70,7 @@ export const signAuthorization = async (provider: IProvider): Promise<any> => {
     }
 }
 
-export const submitAuthorization = async (provider: IProvider): Promise<any> => {
+export const submitAuthorization = async (provider: any): Promise<any> => {
     try {
         const authorization = await signAuthorization(provider);
         const address = await getAccount(provider);
@@ -90,7 +89,7 @@ export const submitAuthorization = async (provider: IProvider): Promise<any> => 
     }
 }
 
-export const ping = async (provider: IProvider): Promise<any> => {
+export const ping = async (provider: any): Promise<any> => {
     try {
         const account = await getAccount(provider);
 
