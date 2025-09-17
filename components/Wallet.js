@@ -4,6 +4,7 @@ import {
     AvatarImage,
 } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { LogOut } from "lucide-react"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -23,7 +24,7 @@ export default function WalletButton() {
 
     const { disconnect } = useDisconnect();
     const { data: walletClient } = useWalletClient();
-    const { user: privyUser } = usePrivy();
+    const { logout, user: privyUser } = usePrivy();
 
     const [user, setUser] = useState({
         name: "shadcn",
@@ -77,9 +78,9 @@ export default function WalletButton() {
                     <DropdownMenuItem>New Team</DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => disconnect()}>
+                <DropdownMenuItem onClick={() => { disconnect(); logout(); }}>
+                    <LogOut />
                     Log out
-                    <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>

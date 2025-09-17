@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter }            from "next/navigation";
-import { useAccount, useWalletClient } from "wagmi";
+import { useAccount } from "wagmi";
 import { Building2, Rocket }    from "lucide-react";
 import WelcomePage              from "./welcome";
 import GetStartedPage           from "./get-started";
@@ -42,7 +42,6 @@ interface UserObj {
 
 export default function Onboarding() {
   const { address, isConnected } = useAccount();
-  const { data: walletClient }   = useWalletClient();
   const { user: privyUser }      = usePrivy();
   const router                   = useRouter();
 
@@ -55,7 +54,7 @@ export default function Onboarding() {
   const [showGetStarted, setShowGetStarted] = useState(false);
 
   useEffect(() => {
-    if (!isConnected || !walletClient || !address) return;
+    if (!isConnected || !address) return;
 
     (async () => {
       try {
@@ -99,7 +98,7 @@ export default function Onboarding() {
         setLoading(false);
       }
     })();
-  }, [isConnected, walletClient, address, privyUser]);
+  }, [isConnected, address, privyUser]);
 
   // ─── Early returns ───────────────────────────────────────────────
   if (!mounted) return null;

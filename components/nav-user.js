@@ -100,7 +100,7 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => { logout(); disconnect(); }}>
+            <DropdownMenuItem onClick={() => { disconnect(); logout(); }}>
               <LogOut />
               Log out
             </DropdownMenuItem>
