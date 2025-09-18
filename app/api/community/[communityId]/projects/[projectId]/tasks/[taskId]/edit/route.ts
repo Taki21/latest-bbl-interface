@@ -6,45 +6,46 @@ import { MemberRole } from "@prisma/client";
 
 export async function POST(
   req: Request,
-  ctx: { params: Promise<{
-    communityId: string;
-    projectId: string;
-    taskId: string;
-  }> }
+  ctx: {
+    params: Promise<{
+      communityId: string;
+      projectId: string;
+      taskId: string;
+    }>;
+  }
 ) {
   const { communityId, projectId, taskId } = await ctx.params;
 
   try {
+    const payload = await req.json();
     const {
       name,
-      description = "",
+      description,
       status,
       priority,
       deadline,
-      balance,        // new task allocation as string
-      creatorAddress, // must match task.owner
-      memberIds = [],
-    } = await req.json();
+      balance,
+      creatorAddress,
+      memberIds,
+    } = payload ?? {};
 
-    if (!name || !deadline || balance == null || !creatorAddress) {
+    if (!creatorAddress) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: "Missing creator address" },
         { status: 400 }
       );
     }
 
-    const newAlloc = BigInt(balance);
-
-    // 1) Fetch existing task & its balance
     const oldTask = await prisma.task.findUnique({
       where: { id: taskId },
-      select: { balance: true, projectId: true, creatorId: true },
+      include: {
+        members: { select: { id: true } },
+      },
     });
     if (!oldTask) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
-    // 2) Authorization: only Owner/Supervisor/TeamLeader or task.creator
     const me = await prisma.member.findFirst({
       where: {
         communityId,
@@ -55,6 +56,7 @@ export async function POST(
     if (!me) {
       return NextResponse.json({ error: "Not a member" }, { status: 403 });
     }
+
     const project = await prisma.project.findUnique({
       where: { id: projectId },
       select: { teamLeaderId: true, balance: true },
@@ -62,6 +64,7 @@ export async function POST(
     if (!project) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
+
     const isCreator = oldTask.creatorId === me.id;
     const isAdmin =
       me.role === MemberRole.Owner ||
@@ -71,54 +74,177 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    // 3) Compute how much to move between project ↔ task
+    const updateData: any = {};
+
+    if (name !== undefined) {
+      const nextName = typeof name === "string" ? name.trim() : "";
+      if (!nextName) {
+        return NextResponse.json(
+          { error: "Task name cannot be empty" },
+          { status: 400 }
+        );
+      }
+      updateData.name = nextName;
+    }
+
+    if (description !== undefined) {
+      updateData.description = typeof description === "string" ? description : "";
+    }
+
+    if (status !== undefined) {
+      updateData.status = status;
+    }
+
+    if (priority !== undefined) {
+      updateData.priority = priority;
+    }
+
+    if (deadline !== undefined) {
+      const nextDeadline = typeof deadline === "string" ? deadline.trim() : "";
+      if (!nextDeadline) {
+        return NextResponse.json(
+          { error: "Deadline cannot be empty" },
+          { status: 400 }
+        );
+      }
+      updateData.deadline = nextDeadline;
+    }
+
+    const balanceProvided = balance !== undefined && balance !== null;
     const oldAlloc = BigInt(oldTask.balance);
-    let projectDelta = oldAlloc - newAlloc; 
-    // if positive → project.balance += projectDelta
-    // if negative → project.balance -= (-projectDelta)
-    if (projectDelta < 0n && project.balance < -projectDelta) {
-      return NextResponse.json(
-        { error: "Insufficient project funds" },
-        { status: 400 }
-      );
+    let projectDelta = 0n;
+
+    if (balanceProvided) {
+      const nextAlloc = BigInt(balance);
+      if (nextAlloc < 0n) {
+        return NextResponse.json(
+          { error: "Budget must be positive" },
+          { status: 400 }
+        );
+      }
+
+      projectDelta = oldAlloc - nextAlloc;
+      if (projectDelta < 0n && project.balance < -projectDelta) {
+        return NextResponse.json(
+          { error: "Insufficient project funds" },
+          { status: 400 }
+        );
+      }
+
+      updateData.balance = nextAlloc;
     }
 
-    // 4) Validate memberIds
-    const valid = await prisma.member.findMany({
-      where: { id: { in: memberIds }, communityId },
-      select: { id: true },
-    });
-    if (valid.length !== memberIds.length) {
-      return NextResponse.json({ error: "Invalid members list" }, { status: 400 });
+    let membersProvided = false;
+    if (memberIds !== undefined) {
+      if (!Array.isArray(memberIds)) {
+        return NextResponse.json(
+          { error: "memberIds must be an array" },
+          { status: 400 }
+        );
+      }
+      const validMembers = await prisma.member.findMany({
+        where: { id: { in: memberIds }, communityId },
+        select: { id: true },
+      });
+      if (validMembers.length !== memberIds.length) {
+        return NextResponse.json(
+          { error: "Invalid members list" },
+          { status: 400 }
+        );
+      }
+      membersProvided = true;
+      updateData.members = {
+        set: validMembers.map((m) => ({ id: m.id })),
+      };
     }
 
-    // 5) Do it in a transaction
-    const [updatedProj, updatedTask] = await prisma.$transaction([
-      prisma.project.update({
-        where: { id: projectId },
-        data: {
-          balance:
-            projectDelta > 0n
-              ? { increment: projectDelta.toString() }
-              : { decrement: (-projectDelta).toString() },
-        },
-      }),
+    if (
+      Object.keys(updateData).length === 0 &&
+      !balanceProvided &&
+      !membersProvided
+    ) {
+      return NextResponse.json(safeJson(oldTask), { status: 200 });
+    }
+
+    const tx: any[] = [];
+    let updatedBalance = project.balance;
+
+    if (balanceProvided) {
+      if (projectDelta > 0n) {
+        tx.push(
+          prisma.project.update({
+            where: { id: projectId },
+            data: {
+              balance: { increment: projectDelta.toString() },
+            },
+          })
+        );
+      } else if (projectDelta < 0n) {
+        tx.push(
+          prisma.project.update({
+            where: { id: projectId },
+            data: {
+              balance: { decrement: (-projectDelta).toString() },
+            },
+          })
+        );
+      }
+    }
+
+    tx.push(
       prisma.task.update({
         where: { id: taskId },
-        data: {
-          name,
-          description,
-          status,
-          priority,
-          deadline,
-          balance: newAlloc,
-          members: { set: valid.map((m) => ({ id: m.id })) },
+        data: updateData,
+        include: {
+          members: {
+            select: {
+              id: true,
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  address: true,
+                  email: true,
+                },
+              },
+            },
+          },
+          creator: {
+            select: {
+              id: true,
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  address: true,
+                  email: true,
+                },
+              },
+            },
+          },
         },
-      }),
-    ]);
+      })
+    );
 
-    // 6) return JSON
-    return NextResponse.json(safeJson(updatedTask), { status: 200 });
+    const results = await prisma.$transaction(tx);
+    const updatedTask = results[results.length - 1];
+    if (balanceProvided) {
+      if (tx.length === 2) {
+        updatedBalance = results[0].balance;
+      } else {
+        updatedBalance =
+          projectDelta > 0n
+            ? project.balance + projectDelta
+            : project.balance - (-projectDelta);
+      }
+    }
+
+    return NextResponse.json(
+      safeJson({
+        task: updatedTask,
+        projectBalance: updatedBalance,
+      })
+    );
   } catch (err) {
     console.error("edit-task error", err);
     return NextResponse.json(

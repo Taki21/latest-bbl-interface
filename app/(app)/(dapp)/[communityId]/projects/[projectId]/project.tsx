@@ -31,7 +31,7 @@ interface Tag {
 interface Task {
   id: string;
   name: string;
-  description?: string;
+  description?: string | null;
   status: string;
   priority: string;
   balance: string | number | bigint;
@@ -43,7 +43,7 @@ interface Task {
 interface Project {
   id: string;
   title: string;
-  description?: string;
+  description?: string | null;
   status: string;
   balance: string | number | bigint;
   deadline: string;
