@@ -20,6 +20,7 @@ export async function POST(
       memberIds,
       balance,   // new project budget (string)
       address,   // caller wallet address
+      tagIds = [],
     } = await req.json();
 
     if (
@@ -27,11 +28,15 @@ export async function POST(
       !deadline ||
       !teamLeaderId ||
       !address ||
-      balance == null
+      balance == null ||
+      !Array.isArray(memberIds) ||
+      !Array.isArray(tagIds)
     ) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
+    const memberIdList = memberIds as string[];
+    const rawTagIdList = tagIds as string[];
     const newBudget = BigInt(balance);
 
     /* ── 2) Load project & authorize caller ─────────────────────── */
@@ -39,6 +44,7 @@ export async function POST(
       where: { id: projectId },
       include: {
         creator: { include: { user: { select: { address: true } } } },
+        projectTags: { select: { tagId: true } },
       },
     });
     if (!project) {
@@ -71,7 +77,37 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    /* ── 3) Compute allocation delta ────────────────────────────── */
+    /* ── 3) Validate selected members ───────────────────────────── */
+    const memberList = memberIdList.length
+      ? await prisma.member.findMany({
+          where: { id: { in: memberIdList }, communityId },
+          select: { id: true },
+        })
+      : [];
+    if (memberList.length !== memberIdList.length) {
+      return NextResponse.json({ error: "Invalid member list" }, { status: 400 });
+    }
+
+    /* ── 4) Normalize + validate tags ───────────────────────────── */
+    const trimmedTagIds = rawTagIdList
+      .filter((id: any): id is string => typeof id === "string")
+      .map((id) => id.trim())
+      .filter(Boolean);
+    if (trimmedTagIds.length !== rawTagIdList.length) {
+      return NextResponse.json({ error: "Invalid tag list" }, { status: 400 });
+    }
+    const uniqueTagIds = Array.from(new Set(trimmedTagIds));
+    const validTags = uniqueTagIds.length
+      ? await prisma.tag.findMany({
+          where: { id: { in: uniqueTagIds }, communityId },
+          select: { id: true },
+        })
+      : [];
+    if (validTags.length !== uniqueTagIds.length) {
+      return NextResponse.json({ error: "Invalid tag list" }, { status: 400 });
+    }
+
+    /* ── 5) Compute allocation delta ────────────────────────────── */
     const currentBudget = BigInt(project.balance);
     let decCaller = 0n;
     let incCaller = 0n;
@@ -88,7 +124,7 @@ export async function POST(
       incCaller = currentBudget - newBudget;
     }
 
-    /* ── 4) Build caller-allocation update if needed ───────────── */
+    /* ── 6) Build caller-allocation update if needed ───────────── */
     const callerUpdate =
       decCaller || incCaller
         ? prisma.member.update({
@@ -102,9 +138,31 @@ export async function POST(
           })
         : null;
 
-    /* ── 5) Perform atomic transaction ──────────────────────────── */
-    const txnOps: any[] = [
-      // a) update project
+    /* ── 7) Prepare tag mutation ops ───────────────────────────── */
+    const deleteTagsOp = uniqueTagIds.length
+      ? prisma.projectTag.deleteMany({
+          where: {
+            projectId,
+            communityId,
+            tagId: { notIn: uniqueTagIds },
+          },
+        })
+      : prisma.projectTag.deleteMany({
+          where: { projectId, communityId },
+        });
+    const createTagsOp = uniqueTagIds.length
+      ? prisma.projectTag.createMany({
+          data: uniqueTagIds.map((tagId) => ({
+            communityId,
+            projectId,
+            tagId,
+          })),
+          skipDuplicates: true,
+        })
+      : null;
+
+    /* ── 8) Perform atomic transaction ──────────────────────────── */
+    const txnOps = [
       prisma.project.update({
         where: { id: projectId },
         data: {
@@ -115,22 +173,32 @@ export async function POST(
           teamLeaderId,
           balance: newBudget.toString(),
           members: {
-            set: memberIds.map((id: string) => ({ id })),
+            set: memberIdList.map((id) => ({ id })),
+          },
+        },
+        include: {
+          projectTags: {
+            include: { tag: { select: { id: true, slug: true, label: true } } },
           },
         },
       }),
-      // b) auto-promote a default→teamLeader if needed
       prisma.member.updateMany({
         where: { id: teamLeaderId, role: MemberRole.Default },
         data: { role: MemberRole.Project_Manager },
       }),
+      deleteTagsOp,
     ];
-
+    if (createTagsOp) txnOps.push(createTagsOp);
     if (callerUpdate) txnOps.push(callerUpdate);
 
-    const [updatedProject] = await prisma.$transaction(txnOps);
+    const [updatedProject] = await prisma.$transaction(txnOps as any);
 
-    return NextResponse.json(safeJson(updatedProject), { status: 200 });
+    const serialized = {
+      ...updatedProject,
+      tags: updatedProject.projectTags.map((pt: any) => pt.tag),
+    };
+
+    return NextResponse.json(safeJson(serialized), { status: 200 });
   } catch (err) {
     console.error("edit-project error", err);
     return NextResponse.json(

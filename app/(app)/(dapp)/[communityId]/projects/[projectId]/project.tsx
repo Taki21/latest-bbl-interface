@@ -22,6 +22,12 @@ interface User {
   email: string | null;
 }
 
+interface Tag {
+  id: string;
+  label: string;
+  slug: string;
+}
+
 interface Task {
   id: string;
   name: string;
@@ -44,6 +50,7 @@ interface Project {
   teamLeader: User;
   members: User[];
   tasks: Task[];
+  tags?: Tag[];
 }
 
 export default function ProjectPage() {
