@@ -115,7 +115,7 @@ export default function ProjectPage() {
     project.teamLeader.address.toLowerCase() === address?.toLowerCase();
 
   return (
-    <div className="container py-8 space-y-8">
+    <div className="py-8 space-y-8">
       <ProjectDetails project={project} />
 
       <div className="flex justify-between items-center">

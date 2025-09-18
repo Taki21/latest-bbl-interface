@@ -75,7 +75,7 @@ export async function GET(
       status: p.status,
       balance: p.balance,
       deadline: p.deadline,
-      teamLeader: p.teamLeader.user.name ?? "—",
+      teamLeader: p.teamLeader.name ?? "—",
       members: p.members,
       tasks: p.tasks,
       tags: p.projectTags.map((pt) => pt.tag),
