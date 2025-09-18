@@ -103,7 +103,7 @@ export function TaskDetails({ task, refresh }: TaskDetailsProps) {
   // determine if we show the menu
   const canEdit =
     role === "Owner" ||
-    role === "Professor" ||
+    role === "Supervisor" ||
     meId === projCreatorId ||
     meId === projTeamLeaderId;
 
@@ -136,7 +136,7 @@ export function TaskDetails({ task, refresh }: TaskDetailsProps) {
 
   const canApprove =
     task.status === "under_review" &&
-    (role === "Professor" || role === "Owner" || meId === projTeamLeaderId);
+    (role === "Supervisor" || role === "Owner" || meId === projTeamLeaderId);
 
   const startTask = async () => {
     const res = await fetch(

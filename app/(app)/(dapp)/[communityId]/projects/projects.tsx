@@ -57,7 +57,7 @@ export default function ProjectsPage() {
       });
   }, [communityId, address]);
 
-  const isAdmin    = role === "Owner" || role === "Professor";
+  const isAdmin    = role === "Owner" || role === "Supervisor";
   const canCreate  = isAdmin;
 
   /* ─── render ──────────────────────────────────── */

@@ -44,7 +44,7 @@ export async function POST(
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
-    // 2) Authorization: only Owner/Professor/TeamLeader or task.creator
+    // 2) Authorization: only Owner/Supervisor/TeamLeader or task.creator
     const me = await prisma.member.findFirst({
       where: {
         communityId,
@@ -65,7 +65,7 @@ export async function POST(
     const isCreator = oldTask.creatorId === me.id;
     const isAdmin =
       me.role === MemberRole.Owner ||
-      me.role === MemberRole.Professor ||
+      me.role === MemberRole.Supervisor ||
       me.id === project.teamLeaderId;
     if (!isCreator && !isAdmin) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });

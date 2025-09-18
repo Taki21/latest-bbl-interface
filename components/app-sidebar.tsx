@@ -49,9 +49,9 @@ export function AppSidebar({ communityId, ...props }: AppSidebarProps) {
   useEffect(() => {
     if (privyUser) {
       setUser({
-        name: privyUser.name || "Anonymous",
-        email: privyUser.email || "",
-        avatar: privyUser.profilePictureUrl || "",
+        name: privyUser.name ?? privyUser?.google?.name ?? "User",
+        email: privyUser.email ?? privyUser?.google?.email ?? "",
+        avatar: privyUser.profilePictureUrl ?? privyUser?.google?.picture ?? "/avatars/shadcn.jpg",
       });
     }
   }, [privyUser, walletClient]);
@@ -80,7 +80,7 @@ export function AppSidebar({ communityId, ...props }: AppSidebarProps) {
       .catch(console.error);
   }, [communityId, address]);
 
-  const isAdmin = role === "Owner" || role === "Professor";
+  const isAdmin = role === "Owner" || role === "Supervisor";
 
   // Primary nav
   const navMain: NavItem[] = [

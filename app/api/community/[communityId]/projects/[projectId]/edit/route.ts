@@ -63,7 +63,7 @@ export async function POST(
 
     const isAdmin =
       callerMember.role === MemberRole.Owner ||
-      callerMember.role === MemberRole.Professor;
+      callerMember.role === MemberRole.Supervisor;
     const isCreator =
       project.creator.user.address.toLowerCase() === address.toLowerCase();
 
@@ -122,7 +122,7 @@ export async function POST(
       // b) auto-promote a default→teamLeader if needed
       prisma.member.updateMany({
         where: { id: teamLeaderId, role: MemberRole.Default },
-        data: { role: MemberRole.Team_Leader },
+        data: { role: MemberRole.Project_Manager },
       }),
     ];
 

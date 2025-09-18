@@ -101,10 +101,10 @@ export default function ProjectPage() {
   if (error) return <p className="text-destructive p-4">{error}</p>;
   if (!project) return <p className="p-4">Loading...</p>;
 
-  // only Owner, Professor, or teamLeader can create tasks
+  // only Owner, Supervisor, or teamLeader can create tasks
   const canCreateTask =
     role === "Owner" ||
-    role === "Professor" ||
+    role === "Supervisor" ||
     project.teamLeader.address.toLowerCase() === address?.toLowerCase();
 
   return (

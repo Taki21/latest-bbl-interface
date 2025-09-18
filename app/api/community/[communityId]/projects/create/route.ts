@@ -43,7 +43,7 @@ export async function POST(
     });
     if (
       !me ||
-      (me.role !== MemberRole.Owner && me.role !== MemberRole.Professor)
+      (me.role !== MemberRole.Owner && me.role !== MemberRole.Supervisor)
     ) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
@@ -99,7 +99,7 @@ export async function POST(
     if (tl.role === MemberRole.Default) {
       await prisma.member.update({
         where: { id: teamLeaderId },
-        data: { role: MemberRole.Team_Leader },
+        data: { role: MemberRole.Project_Manager },
       });
     }
 

@@ -16,7 +16,7 @@ export interface Member {
     user: User;
     communityId: string;
     balance: BigInt;
-    role: "Owner" | "Professor" | "Team Leader" | "Default";
+    role: "Owner" | "Supervisor" | "Project Manager" | "Default";
 }
 
 // Task type definition

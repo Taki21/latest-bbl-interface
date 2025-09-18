@@ -253,10 +253,10 @@ export default function ProjectEditForm({
         </SelectContent>
       </Select>
 
-      {/* Team Leader */}
+      {/* Project Manager */}
       <Select value={teamLeaderId} onValueChange={(v) => setTeamLeaderId(v)}>
         <SelectTrigger className="w-full">
-          <SelectValue placeholder="Team Leader">
+          <SelectValue placeholder="Project Manager">
             {memberLabel(teamLeaderId)}
           </SelectValue>
         </SelectTrigger>

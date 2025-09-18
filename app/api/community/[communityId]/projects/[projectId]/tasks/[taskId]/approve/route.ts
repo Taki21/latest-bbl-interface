@@ -39,9 +39,9 @@ export async function POST(
     }
 
     const isLeader = member.id === project.teamLeaderId;
-    const isProfessor = member.role === MemberRole.Professor || member.role === MemberRole.Owner;
+    const isSupervisor = member.role === MemberRole.Supervisor || member.role === MemberRole.Owner;
 
-    if (!isLeader && !isProfessor) {
+    if (!isLeader && !isSupervisor) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
