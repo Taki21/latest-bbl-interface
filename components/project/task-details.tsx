@@ -603,7 +603,7 @@ export function TaskDetails({ task, refresh }: TaskDetailsProps) {
 
   return (
     <Card className="relative">
-      {canEdit && (
+      {/* {canEdit && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -632,7 +632,7 @@ export function TaskDetails({ task, refresh }: TaskDetailsProps) {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      )}
+      )} */}
 
       <CardHeader className="pb-0 space-y-4">
         {editingTitle ? (
@@ -686,17 +686,17 @@ export function TaskDetails({ task, refresh }: TaskDetailsProps) {
         )}
       </CardHeader>
 
-      <CardContent className="space-y-6">
+      <CardContent className="px-0 space-y-6">
         <div className="space-y-3">
           <Editor
             key={editorKey}
             initialContent={initialBlocks}
             editable={canEdit}
             onChange={handleEditorChange}
-            className="border border-border rounded-md"
+            className="rounded-md"
           />
           {canEdit && (
-            <div className="pl-6 pt-3 flex">
+            <div className="pl-6 flex">
               <Button
                 size="sm"
                 onClick={handleDescriptionSave}
