@@ -19,7 +19,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
     const isAdmin =
-      caller.role === MemberRole.Owner || caller.role === MemberRole.Professor;
+      caller.role === MemberRole.Owner || caller.role === MemberRole.Supervisor;
     if (!isAdmin)
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 

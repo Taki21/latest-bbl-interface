@@ -1,6 +1,5 @@
 "use client";
 
-import { formatEther } from "viem";
 import {
   Card,
   CardHeader,
@@ -13,6 +12,7 @@ import {
   AvatarImage,
   AvatarFallback,
 } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 
 interface User {
   id: string;
@@ -32,6 +32,7 @@ interface ProjectDetailsProps {
     teamLeader: User;
     members: User[];
     tasks: { id: string; name: string }[];
+    tags?: { id: string; label: string; slug: string }[];
   };
 }
 
@@ -52,14 +53,14 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
         )}
       </CardHeader>
       <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Team Leader */}
+        {/* Project Manager */}
         <div className="flex items-center space-x-3">
           <Avatar className="h-12 w-12">
             <AvatarImage src={undefined} alt={name} />
             <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
           <div>
-            <p className="text-sm text-muted-foreground">Team Leader</p>
+            <p className="text-sm text-muted-foreground">Project Manager</p>
             <p className="font-medium">{name}</p>
           </div>
         </div>
@@ -99,6 +100,19 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
             {project.status.replace("_", " ")}
           </p>
         </div>
+
+        {project.tags?.length ? (
+          <div className="md:col-span-3">
+            <p className="text-sm text-muted-foreground">Tags</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {project.tags.map((tag) => (
+                <Badge key={tag.id} variant="secondary">
+                  {tag.label}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   );

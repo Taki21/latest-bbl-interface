@@ -8,7 +8,7 @@ export async function GET(
   const routeParams = await params;
 
   try {
-    const { communityId, projectId } = params;
+    const { communityId, projectId } = routeParams;
 
     const project = await prisma.project.findFirst({
       where: { id: projectId, communityId },
@@ -57,6 +57,11 @@ export async function GET(
             },
           },
         },
+        projectTags: {
+          include: {
+            tag: { select: { id: true, slug: true, label: true } },
+          },
+        },
       },
     });
 
@@ -74,6 +79,7 @@ export async function GET(
         creator: t.creator.user,
         members: t.members.map((m) => m.user),
       })),
+      tags: project.projectTags.map((pt) => pt.tag),
     };
 
     return NextResponse.json(safeJson(out));

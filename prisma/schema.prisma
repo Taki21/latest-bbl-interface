@@ -10,10 +10,12 @@ datasource db {
 /* ───────────── ENUMS ───────────── */
 
 enum MemberRole {
-  Owner        @map("Owner")
-  Professor    @map("Professor")
-  Team_Leader  @map("Team Leader")
-  Default      @map("Default")
+  Owner           @map("Owner")
+  Supervisor      @map("Supervisor")
+  Project_Manager @map("Project Manager")
+  Default         @map("Default")
+  Professor       @map("Professor")
+  Team_Leader     @map("Team Leader")
 }
 
 enum TaskStatus {
@@ -41,6 +43,7 @@ model User {
   id          String      @id @default(uuid())
   name        String
   email       String      @unique
+  backupEmail String?
   address     String      @unique
   balance     BigInt
 
@@ -81,6 +84,11 @@ model Community {
   members          Member[]
   projects         Project[]  @relation("CommunityProjects")
 
+  // Tag catalog + links
+  tags             Tag[]          // all tags defined for this community
+  memberTags       MemberTag[]    // all member↔tag links in this community
+  projectTags      ProjectTag[]   // all project↔tag links in this community
+
   createdAt        String?
   updatedAt        String?
 }
@@ -96,8 +104,8 @@ model Member {
   communityId  String
   community    Community  @relation(fields: [communityId], references: [id])
 
-  /* NEW: per-community display name */
-  name         String?    // nullable for safe prod migration; make required later if you want
+  /* per-community display name */
+  name         String?
 
   balance      BigInt
   role         MemberRole
@@ -110,6 +118,9 @@ model Member {
   created       Project[]  @relation("ProjectCreator")
   createdTasks  Task[]     @relation("TaskCreator")
 
+  // tags attached to this member (scoped by community)
+  memberTags    MemberTag[]
+
   @@unique([userId, communityId])
 }
 
@@ -120,6 +131,7 @@ model Project {
   title         String
   description   String
   balance       BigInt
+  budget        BigInt?
 
   /* FK → Community that owns this project */
   communityId   String
@@ -143,6 +155,9 @@ model Project {
   members       Member[]      @relation("MemberProjects")
   tasks         Task[]
 
+  // tags attached to this project (scoped by community)
+  projectTags   ProjectTag[]
+
   createdAt     String?
   updatedAt     String?
 }
@@ -154,6 +169,7 @@ model Task {
   status      TaskStatus
   priority    TaskPriority
   balance     BigInt
+  budget      BigInt?
   deadline    String
 
   /* FK → User (to satisfy User.tasks[]) */
@@ -173,4 +189,64 @@ model Task {
 
   createdAt   String?
   updatedAt   String?
+}
+
+/* ═══════════ TAGGING (Community-scoped) ═══════════ */
+
+// Community-scoped tag catalog
+model Tag {
+  id          String     @id @default(uuid())
+  communityId String
+  community   Community  @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  slug   String          // canonical, lowercase, no spaces
+  label  String
+
+  memberTags  MemberTag[]
+  projectTags ProjectTag[]
+
+  @@unique([communityId, slug], name: "community_slug_unique")
+  @@index([communityId, slug])
+}
+
+// Link a Member to a Tag within the same Community
+model MemberTag {
+  id          String     @id @default(uuid())
+
+  communityId String
+  memberId    String
+  tagId       String
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  member    Member    @relation(fields: [memberId],    references: [id], onDelete: Cascade)
+  tag       Tag       @relation(fields: [tagId],       references: [id], onDelete: Cascade)
+
+  addedAt   DateTime  @default(now())
+  addedBy   String?   // optional: Member.id or User.id of actor
+
+  // one tag per member per community
+  @@unique([communityId, memberId, tagId], name: "community_member_tag_unique")
+  @@index([communityId, tagId])
+  @@index([communityId, memberId])
+}
+
+// Link a Project to a Tag within the same Community
+model ProjectTag {
+  id          String     @id @default(uuid())
+
+  communityId String
+  projectId   String
+  tagId       String
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  project   Project   @relation(fields: [projectId],   references: [id], onDelete: Cascade)
+  tag       Tag       @relation(fields: [tagId],       references: [id], onDelete: Cascade)
+
+  addedAt   DateTime  @default(now())
+  addedBy   String?   // optional: Member.id or User.id who tagged
+
+  // one tag per project per community
+  @@unique([communityId, projectId, tagId], name: "community_project_tag_unique")
+  @@index([communityId, tagId])
+  @@index([communityId, projectId])
 }

@@ -21,9 +21,10 @@ const privyConfig: PrivyClientConfig = {
   embeddedWallets: {
     createOnLogin: 'users-without-wallets',
   },
-  loginMethods: ['wallet', 'email', 'sms'],
+  // Restrict login options to Google and Email only
+  loginMethods: ['google', 'email'],
   appearance: {
-    showWalletLoginFirst: true,
+    showWalletLoginFirst: false,
   },
 };
 
@@ -37,7 +38,7 @@ export function Providers({children}: {children: React.ReactNode}) {
       config={privyConfig}
     >
       <QueryClientProvider client={queryClient}>
-        <WagmiProvider config={wagmiConfig} reconnectOnMount={false}>
+        <WagmiProvider config={wagmiConfig} reconnectOnMount>
           {children}
         </WagmiProvider>
       </QueryClientProvider>

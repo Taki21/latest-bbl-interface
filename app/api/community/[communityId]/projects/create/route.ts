@@ -19,11 +19,15 @@ export async function POST(
       creatorAddress,
       teamLeaderId,
       memberIds = [],
+      tagIds = [],
     } = await req.json();
 
     // 0) Basic validation
     if (!title || !deadline || balance == null || !creatorAddress || !teamLeaderId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+    if (!Array.isArray(memberIds) || !Array.isArray(tagIds)) {
+      return NextResponse.json({ error: "Invalid payload format" }, { status: 400 });
     }
 
     const allocation = BigInt(balance);
@@ -43,7 +47,7 @@ export async function POST(
     });
     if (
       !me ||
-      (me.role !== MemberRole.Owner && me.role !== MemberRole.Professor)
+      (me.role !== MemberRole.Owner && me.role !== MemberRole.Supervisor)
     ) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
@@ -61,15 +65,36 @@ export async function POST(
     }
 
     // 3) Validate all selected memberIds
-    const validMembers = await prisma.member.findMany({
-      where: { id: { in: memberIds }, communityId },
-      select: { id: true },
-    });
+    const validMembers = memberIds.length
+      ? await prisma.member.findMany({
+          where: { id: { in: memberIds }, communityId },
+          select: { id: true },
+        })
+      : [];
     if (validMembers.length !== memberIds.length) {
       return NextResponse.json({ error: "Invalid member list" }, { status: 400 });
     }
 
-    // 4) Transaction:
+    // 4) Validate project tags (dedupe + ensure community match)
+    const trimmedTagIds = tagIds
+      .filter((id: any): id is string => typeof id === "string")
+      .map((id) => id.trim())
+      .filter(Boolean);
+    if (trimmedTagIds.length !== tagIds.length) {
+      return NextResponse.json({ error: "Invalid tag list" }, { status: 400 });
+    }
+    const uniqueTagIds = Array.from(new Set(trimmedTagIds));
+    const validTags = uniqueTagIds.length
+      ? await prisma.tag.findMany({
+          where: { id: { in: uniqueTagIds }, communityId },
+          select: { id: true },
+        })
+      : [];
+    if (validTags.length !== uniqueTagIds.length) {
+      return NextResponse.json({ error: "Invalid tag list" }, { status: 400 });
+    }
+
+    // 5) Transaction:
     //    a) decrement creator.allocation
     //    b) create new project with its balance = allocation
     const [_, project] = await prisma.$transaction([
@@ -91,19 +116,44 @@ export async function POST(
           members: {
             connect: validMembers.map((m) => ({ id: m.id })),
           },
+          ...(uniqueTagIds.length
+            ? {
+                projectTags: {
+                  createMany: {
+                    data: uniqueTagIds.map((tagId) => ({
+                      communityId,
+                      tagId,
+                    })),
+                    skipDuplicates: true,
+                  },
+                },
+              }
+            : {}),
+        },
+        include: {
+          projectTags: {
+            include: {
+              tag: { select: { id: true, slug: true, label: true } },
+            },
+          },
         },
       }),
     ]);
 
-    // 5) Auto-promote default member → team leader if needed
+    // 6) Auto-promote default member → team leader if needed
     if (tl.role === MemberRole.Default) {
       await prisma.member.update({
         where: { id: teamLeaderId },
-        data: { role: MemberRole.Team_Leader },
+        data: { role: MemberRole.Project_Manager },
       });
     }
 
-    return NextResponse.json(safeJson(project), { status: 201 });
+    const serialized = {
+      ...project,
+      tags: project.projectTags.map((pt) => pt.tag),
+    };
+
+    return NextResponse.json(safeJson(serialized), { status: 201 });
   } catch (err) {
     console.error("create-project error", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

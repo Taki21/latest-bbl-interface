@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAccount } from "wagmi";
+import { usePrivy } from "@privy-io/react-auth";
 import { AppSidebar } from "@/components/app-sidebar";
 import {
   Breadcrumb,
@@ -28,16 +29,22 @@ import MiniBalance from "@/components/MiniBalance";
 
 export default function DappLayout({ children }) {
   const { isConnected } = useAccount();
+  const { ready, authenticated } = usePrivy();
   const router = useRouter();
   const params = useParams();
   const communityId = (params?.communityId) ?? "";
 
+  // Redirect to landing only once Privy is ready and user is not authenticated
   useEffect(() => {
-    if (!isConnected) {
-      router.push("/login");
+    if (ready && !authenticated) {
+      router.push("/");
     }
-  }, [isConnected, router]);
+  }, [ready, authenticated, router]);
 
+  // Wait for Privy to initialize; avoid premature redirect loops
+  if (!ready) return null;
+  if (!authenticated) return null;
+  // Hide content until wallet reconnects; Wagmi auto-reconnect is enabled in Providers
   if (!isConnected) return null;
 
   return (

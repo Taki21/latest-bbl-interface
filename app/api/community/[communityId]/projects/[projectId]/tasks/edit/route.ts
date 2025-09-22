@@ -67,7 +67,7 @@ export async function POST(
     // 3) Check permissions
     const allowed =
       me.role === MemberRole.Owner ||
-      me.role === MemberRole.Professor ||
+      me.role === MemberRole.Supervisor ||
       me.id === project.teamLeaderId ||
       me.id === oldTask.creatorId;
     if (!allowed) {
