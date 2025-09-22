@@ -27,7 +27,7 @@ export async function POST(
       );
     }
 
-    // ── 2) Caller must be Owner or Professor ────────────────────────────
+    // ── 2) Caller must be Owner or Supervisor ────────────────────────────
     const caller = await prisma.member.findFirst({
       where: {
         communityId: ctx.params.communityId,
@@ -37,7 +37,7 @@ export async function POST(
     });
     if (
       !caller ||
-      (caller.role !== MemberRole.Owner && caller.role !== MemberRole.Professor)
+      (caller.role !== MemberRole.Owner && caller.role !== MemberRole.Supervisor)
     ) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }

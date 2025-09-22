@@ -66,7 +66,7 @@ export async function POST(
     }
     if (
       me.role !== MemberRole.Owner &&
-      me.role !== MemberRole.Professor &&
+      me.role !== MemberRole.Supervisor &&
       me.id !== project.teamLeaderId
     ) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });

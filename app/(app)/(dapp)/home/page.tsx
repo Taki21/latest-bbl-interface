@@ -36,9 +36,9 @@ export default function HomePage() {
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState<string | null>(null);
 
-  /* redirect to /login when wallet disconnected */
+  /* redirect to landing when wallet disconnected */
   useEffect(() => {
-    if (!isConnected) router.push("/login");
+    if (!isConnected) router.push("/");
   }, [isConnected, router]);
 
   /* fetch user + communities */

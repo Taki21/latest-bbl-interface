@@ -28,7 +28,7 @@ export async function POST(
     });
 
     const isAdmin =
-      caller?.role === MemberRole.Owner || caller?.role === MemberRole.Professor;
+      caller?.role === MemberRole.Owner || caller?.role === MemberRole.Supervisor;
     const isCreator =
       project.creator.user.address.toLowerCase() === address.toLowerCase();
 

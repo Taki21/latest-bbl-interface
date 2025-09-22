@@ -35,7 +35,12 @@ export async function GET(
         projects: {
           include: {
             members: true,
-            tasks: true,
+            tasks: {
+              include: {
+                creator: { include: { user: true } },
+                members: { include: { user: true } },
+              },
+            },
             teamLeader: { include: { user: true } },
             creator:    { include: { user: true } },
           },

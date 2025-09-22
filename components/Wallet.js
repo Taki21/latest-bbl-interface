@@ -4,6 +4,7 @@ import {
     AvatarImage,
 } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { LogOut } from "lucide-react"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -16,15 +17,14 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 import { useEffect, useState } from "react"
-import { useWeb3Auth } from "@/context/Web3AuthContext"
 import { useDisconnect, useWalletClient } from "wagmi"
-import { data } from "autoprefixer"
+import { usePrivy } from "@privy-io/react-auth"
 
 export default function WalletButton() {
 
     const { disconnect } = useDisconnect();
     const { data: walletClient } = useWalletClient();
-    let web3Auth = useWeb3Auth();
+    const { logout, user: privyUser } = usePrivy();
 
     const [user, setUser] = useState({
         name: "shadcn",
@@ -33,23 +33,14 @@ export default function WalletButton() {
     });
 
     useEffect(() => {
-        const getUserInfo = async () => {
-            try {
-                var userInfo = await web3Auth?.getUserInfo();
-            } catch (e) {
-                console.log("Cannot get userInfo first time, likely web3Auth not fully updated");
-            }
-            console.log("/app, userInfo", userInfo);
-            if (userInfo) {
-                setUser({
-                    name: userInfo.name,
-                    email: userInfo.email,
-                    avatar: userInfo.profileImage,
-                });
-            }
-        };
-        getUserInfo();
-    }, [walletClient]);
+        if (privyUser) {
+            setUser({
+                name: privyUser.name ?? privyUser?.google?.name ?? "User",
+                email: privyUser.email ?? privyUser?.google?.email ?? "",
+                avatar: privyUser.profilePictureUrl ?? privyUser?.google?.picture ?? "/avatars/shadcn.jpg",
+            });
+        }
+    }, [privyUser, walletClient]);
 
     return (
         <DropdownMenu>
@@ -87,9 +78,9 @@ export default function WalletButton() {
                     <DropdownMenuItem>New Team</DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => disconnect()}>
+                <DropdownMenuItem onClick={() => { disconnect(); logout(); }}>
+                    <LogOut />
                     Log out
-                    <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>

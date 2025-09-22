@@ -20,6 +20,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface BaseProject {
   id: string;
@@ -33,6 +34,7 @@ interface BaseProject {
   creator?: { address: string };
   members: { id: string }[];
   tasks: { id: string; status: string }[];
+  tags?: { id: string; label: string; slug: string }[];
 }
 
 export interface ProjectCardProps {
@@ -157,10 +159,20 @@ export function ProjectCard({
               <AvatarFallback>{initials}</AvatarFallback>
             </Avatar>
             <div>
-              <p className="text-xs text-muted-foreground">Team Leader</p>
+              <p className="text-xs text-muted-foreground">Project Manager</p>
               <p className="text-sm">{project.teamLeader}</p>
             </div>
           </div>
+
+          {project.tags?.length ? (
+            <div className="flex flex-wrap gap-2">
+              {project.tags.map((tag) => (
+                <Badge key={tag.id} variant="secondary">
+                  {tag.label}
+                </Badge>
+              ))}
+            </div>
+          ) : null}
 
           <div className="flex flex-wrap gap-4">
             <Stat label="Members" value={project.members.length} />

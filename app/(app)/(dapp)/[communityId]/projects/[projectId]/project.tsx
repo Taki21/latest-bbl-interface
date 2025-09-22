@@ -22,10 +22,16 @@ interface User {
   email: string | null;
 }
 
+interface Tag {
+  id: string;
+  label: string;
+  slug: string;
+}
+
 interface Task {
   id: string;
   name: string;
-  description?: string;
+  description?: string | null;
   status: string;
   priority: string;
   balance: string | number | bigint;
@@ -37,13 +43,14 @@ interface Task {
 interface Project {
   id: string;
   title: string;
-  description?: string;
+  description?: string | null;
   status: string;
   balance: string | number | bigint;
   deadline: string;
   teamLeader: User;
   members: User[];
   tasks: Task[];
+  tags?: Tag[];
 }
 
 export default function ProjectPage() {
@@ -101,14 +108,14 @@ export default function ProjectPage() {
   if (error) return <p className="text-destructive p-4">{error}</p>;
   if (!project) return <p className="p-4">Loading...</p>;
 
-  // only Owner, Professor, or teamLeader can create tasks
+  // only Owner, Supervisor, or teamLeader can create tasks
   const canCreateTask =
     role === "Owner" ||
-    role === "Professor" ||
+    role === "Supervisor" ||
     project.teamLeader.address.toLowerCase() === address?.toLowerCase();
 
   return (
-    <div className="container py-8 space-y-8">
+    <div className="py-8 space-y-8">
       <ProjectDetails project={project} />
 
       <div className="flex justify-between items-center">

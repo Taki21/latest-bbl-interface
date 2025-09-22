@@ -43,7 +43,7 @@ interface Member {
 }
 
 // Enum strings exactly as Prisma expects
-const roles = ["Owner", "Professor", "Team_Leader", "Default"] as const;
+const roles = ["Owner", "Supervisor", "Project_Manager", "Default"] as const;
 
 // Convert enum → nice label
 const pretty = (r: string) =>
@@ -89,7 +89,7 @@ export default function MembersPage() {
     if (communityId) fetchMembers();
   }, [communityId, address]);
 
-  const isAdmin = myRole === "Owner" || myRole === "Professor";
+  const isAdmin = myRole === "Owner" || myRole === "Supervisor";
 
   const changeRole = async (memberId: string, newRole: string) => {
     setUpdatingId(memberId);

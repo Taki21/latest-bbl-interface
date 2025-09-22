@@ -30,13 +30,51 @@ export function JoinCommunityDialog({
   const [name, setName] = useState("");
 
   const handleCodeChange = (index: number, value: string) => {
-    if (value.length > 1) return;
+    const sanitized = value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+
+    if (!sanitized) {
+      const clearedCode = [...code];
+      clearedCode[index] = "";
+      setCode(clearedCode);
+      return;
+    }
+
+    const chars = sanitized.slice(0, code.length - index).split("");
     const newCode = [...code];
-    newCode[index] = value.toUpperCase();
+    chars.forEach((char, charIndex) => {
+      newCode[index + charIndex] = char;
+    });
     setCode(newCode);
 
-    if (value && index < 7) {
-      const next = document.getElementById(`code-${index + 1}`) as HTMLInputElement;
+    const nextIndex = index + chars.length;
+    if (nextIndex < code.length) {
+      const next = document.getElementById(`code-${nextIndex}`) as HTMLInputElement;
+      next?.focus();
+    }
+  };
+
+  const handlePaste = (
+    index: number,
+    event: React.ClipboardEvent<HTMLInputElement>,
+  ) => {
+    event.preventDefault();
+    const pasted = event.clipboardData
+      .getData("text")
+      .replace(/[^a-zA-Z0-9]/g, "")
+      .toUpperCase();
+
+    if (!pasted) return;
+
+    const chars = pasted.slice(0, code.length - index).split("");
+    const newCode = [...code];
+    chars.forEach((char, charIndex) => {
+      newCode[index + charIndex] = char;
+    });
+    setCode(newCode);
+
+    const nextIndex = index + chars.length;
+    if (nextIndex < code.length) {
+      const next = document.getElementById(`code-${nextIndex}`) as HTMLInputElement;
       next?.focus();
     }
   };
@@ -106,6 +144,7 @@ export function JoinCommunityDialog({
                   value={digit}
                   onChange={(e) => handleCodeChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
+                  onPaste={(e) => handlePaste(index, e)}
                   className="w-10 h-12 text-center text-2xl border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                   pattern="[a-zA-Z0-9]"
                   required

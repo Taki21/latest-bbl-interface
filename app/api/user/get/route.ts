@@ -2,38 +2,36 @@
 
 import { NextResponse } from "next/server";
 import { prisma, safeJson } from "@/lib/prisma";
+import { userWithMembershipSelect } from "@/lib/prisma-user";
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const address = searchParams.get("address");
-    if (!address) {
+    const email = searchParams.get("email");
+
+    if (!address && !email) {
       return NextResponse.json(
-        { error: "Missing query param: address" },
+        { error: "Missing query param: address or email" },
         { status: 400 }
       );
     }
 
-    // Fetch the user and _all_ their Member records (including allocation & role)
-    const user = await prisma.user.findUnique({
-      where: { address },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        address: true,
-        members: {
-          select: {
-            id:         true,
-            allocation: true,
-            role:       true,
-            community: {
-              select: { id: true, name: true, joinCode: true },
-            },
-          },
-        },
-      },
-    });
+    let user = null;
+
+    if (address) {
+      user = await prisma.user.findUnique({
+        where: { address },
+        select: userWithMembershipSelect,
+      });
+    }
+
+    if (!user && email) {
+      user = await prisma.user.findUnique({
+        where: { email },
+        select: userWithMembershipSelect,
+      });
+    }
 
     if (!user) {
       return NextResponse.json(

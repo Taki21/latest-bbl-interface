@@ -1,13 +1,29 @@
 // app/page.tsx
 "use client";
 
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ModeToggle } from "@/components/ToggleTheme"; // your light/dark switch
+import { useRouter } from "next/navigation";
+import { usePrivy, useLogin } from "@privy-io/react-auth";
+import { useEffect } from "react";
 
 export default function LandingPage() {
+  const router = useRouter();
+  const { ready, authenticated } = usePrivy();
+
+  const { login } = useLogin({
+    onComplete: () => router.push("/onboarding"),
+    onError: (err) => console.error("Privy login failed:", err),
+  });
+
+  useEffect(() => {
+    if (ready && authenticated) router.push("/onboarding");
+  }, [ready, authenticated, router]);
+
+  const disabled = !ready || (ready && authenticated);
+
   return (
     <div className="min-h-screen flex flex-col bg-white text-gray-900 dark:bg-black dark:text-gray-100">
       {/* Header */}
@@ -15,9 +31,7 @@ export default function LandingPage() {
         <h1 className="text-3xl font-extrabold">Commputation</h1>
         <div className="flex items-center space-x-4">
           <ModeToggle />
-          <Link href="/login">
-            <Button variant="outline">Log in</Button>
-          </Link>
+          <Button variant="outline" onClick={() => login()} disabled={disabled}>Log in</Button>
         </div>
       </header>
 
@@ -30,9 +44,7 @@ export default function LandingPage() {
           Create on-chain communities with token-based governance, track projects & tasks,
           and manage your treasury—all in one platform.
         </p>
-        <Link href="/login">
-          <Button size="lg">Get Started</Button>
-        </Link>
+        <Button size="lg" onClick={() => login()} disabled={disabled}>Get Started</Button>
       </main>
 
       <Separator className="my-16 border-gray-200 dark:border-gray-700" />
