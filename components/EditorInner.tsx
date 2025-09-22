@@ -3,7 +3,7 @@
 import "@blocknote/core/fonts/inter.css";
 import "@blocknote/mantine/style.css";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTheme } from "next-themes";
 import type { Block } from "@blocknote/core";
 import { useCreateBlockNote } from "@blocknote/react";
@@ -23,23 +23,19 @@ export default function EditorInner({
     onChange,
 }: EditorProps) {
     const { theme } = useTheme();
-    const editor = useCreateBlockNote({ initialContent });
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
 
-    // optional: re-apply when prop changes
-    const last = useRef<string | null>(null);
-    useEffect(() => {
-        if (!editor) return;
-        const serialized = JSON.stringify(initialContent ?? []);
-        if (last.current === serialized) return;
-        last.current = serialized;
+    const normalizedInitial = useMemo(() => {
+        const list = initialContent ?? [];
+        return Array.isArray(list) && list.length > 0
+            ? list
+            : ([{ type: "paragraph", content: [] }] as unknown as Block[]);
+    }, [initialContent]);
+    const editor = useCreateBlockNote({ initialContent: normalizedInitial });
 
-        requestAnimationFrame(() => {
-            editor.replaceBlocks(
-                editor.document,
-                initialContent?.length ? initialContent : []
-            );
-        });
-    }, [editor, initialContent]);
+    // Guard: don't render until the editor instance exists on client
+    if (!mounted || !editor) return null;
 
     return (
         <BlockNoteView

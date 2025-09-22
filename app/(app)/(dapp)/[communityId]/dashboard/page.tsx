@@ -73,7 +73,7 @@ export default function DashboardPage() {
   const projectsCount = community.projects.length;
   const allTasks      = community.projects.flatMap((p) => p.tasks);
   const tasksCount    = allTasks.length;
-  const isSupervisor  = myRole === "Supervisor" || myRole === "Owner";
+  const isOwner       = myRole === "Owner";
 
   return (
     <div className="space-y-10 py-8">
@@ -98,12 +98,15 @@ export default function DashboardPage() {
             tasks={allTasks as any}
             projects={community.projects as any}
             myAddress={address}
+            communityId={communityId as string}
           />
           <CompletionTrend tasks={allTasks as any} tokenSymbol={community.tokenSymbol} />
           <ProjectsWidget projects={community.projects} />
         </div>
         <div className="space-y-8">
-          <QuickActions communityId={community.id} canCreateProject={isSupervisor} />
+          {isOwner ? (
+            <QuickActions communityId={community.id} canCreateProject={true} />
+          ) : null}
           <MyTasksWidget tasks={allTasks as any} myAddress={address} />
           <LeaderboardWidget members={community.members as any} tokenSymbol={community.tokenSymbol} />
           <MembersWidget members={community.members} />

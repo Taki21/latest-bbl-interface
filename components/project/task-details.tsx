@@ -198,16 +198,6 @@ export function TaskDetails({ task, refresh }: TaskDetailsProps) {
   const [draftBlocks, setDraftBlocks] = useState<Block<any, any, any>[] | undefined>(initialBlocks);
   const [editorDirty, setEditorDirty] = useState(false);
 
-  const editorKey = useMemo(() => {
-    const str = serializedInitialBlocks;
-    let hash = 0;
-    for (let i = 0; i < str.length; i += 1) {
-      hash = (hash << 5) - hash + str.charCodeAt(i);
-      hash |= 0;
-    }
-    return `${taskState.id}-${hash}`;
-  }, [taskState.id, serializedInitialBlocks]);
-
   // sync local task state when parent task changes
   useEffect(() => {
     setTaskState(task);
@@ -688,26 +678,31 @@ export function TaskDetails({ task, refresh }: TaskDetailsProps) {
 
       <CardContent className="px-0 space-y-6">
         <div className="space-y-3">
-          <Editor
-            key={editorKey}
-            initialContent={initialBlocks}
-            editable={canEdit}
-            onChange={handleEditorChange}
-            className="rounded-md"
-          />
-          {canEdit && (
-            <div className="pl-6 flex">
-              <Button
-                size="sm"
-                onClick={handleDescriptionSave}
-                disabled={!editorDirty || savingField === "description"}
-              >
-                {savingField === "description" && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                Save Description
-              </Button>
-            </div>
+          {metaLoading ? (
+            <div className="px-6 text-sm text-muted-foreground">Loading editor…</div>
+          ) : (
+            <>
+              <Editor
+                initialContent={initialBlocks}
+                editable={canEdit}
+                onChange={handleEditorChange}
+                className="rounded-md"
+              />
+              {canEdit && (
+                <div className="pl-6 flex">
+                  <Button
+                    size="sm"
+                    onClick={handleDescriptionSave}
+                    disabled={!editorDirty || savingField === "description"}
+                  >
+                    {savingField === "description" && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    Save Description
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </div>
 
