@@ -48,7 +48,14 @@ export async function GET(
         teamLeader: {
           include: {
             user: {
-              select: { name: true },
+              select: { name: true, address: true },
+            },
+          },
+        },
+        creator: {
+          include: {
+            user: {
+              select: { name: true, address: true },
             },
           },
         },
@@ -68,18 +75,29 @@ export async function GET(
     });
 
     // Flatten into the shape the UI expects
-    const projects = raw.map((p) => ({
-      id: p.id,
-      title: p.title,
-      description: p.description,
-      status: p.status,
-      balance: p.balance,
-      deadline: p.deadline,
-      teamLeader: p.teamLeader.name ?? "—",
-      members: p.members,
-      tasks: p.tasks,
-      tags: p.projectTags.map((pt) => pt.tag),
-    }));
+    const projects = raw.map((p) => {
+      const supervisorName = p.creator?.name ?? p.creator?.user?.name ?? "—";
+      const supervisorAddress = p.creator?.user?.address ?? null;
+      const teamLeaderName = p.teamLeader?.name ?? p.teamLeader?.user?.name ?? "—";
+      const teamLeaderAddress = p.teamLeader?.user?.address ?? null;
+
+      return {
+        id: p.id,
+        title: p.title,
+        description: p.description,
+        status: p.status,
+        balance: p.balance,
+        deadline: p.deadline,
+        teamLeader: teamLeaderName,
+        teamLeaderAddress,
+        supervisor: supervisorName,
+        supervisorAddress,
+        creatorAddress: supervisorAddress,
+        members: p.members,
+        tasks: p.tasks,
+        tags: p.projectTags.map((pt) => pt.tag),
+      };
+    });
 
     return NextResponse.json(safeJson(projects));
   } catch (err) {

@@ -55,8 +55,11 @@ interface Tag {
 }
 
 interface Project extends PrismaProject {
-  creatorAddress?: string;
-  creator?: { address?: string };
+  creatorAddress?: string | null;
+  creator?: { address?: string | null };
+  supervisor?: string | null;
+  supervisorAddress?: string | null;
+  teamLeaderAddress?: string | null;
   members: { id: string }[];
   tasks: { id: string; status: string }[];
   tags?: Tag[];
@@ -239,7 +242,8 @@ export default function ProjectsPage() {
             <TableRow>
               <TableHead className="w-[28rem]">Project</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Manager</TableHead>
+              <TableHead>Supervisor</TableHead>
+              <TableHead>Team Leader</TableHead>
               <TableHead className="text-center">Members</TableHead>
               <TableHead className="text-center">Tasks</TableHead>
               <TableHead>Budget</TableHead>
@@ -348,10 +352,12 @@ function ProjectTableRow({
   const canEdit = isAdmin || meIsCreator;
   const canDelete = canEdit;
 
-  const managerName = project.teamLeader?.trim() || "-";
-  console.log("project", project);
+  const supervisorName = (project.supervisor ?? "").trim() || "-";
+  const supervisorAddress = project.supervisorAddress ?? creatorAddress ?? "";
+  const teamLeaderName = (project.teamLeader ?? "").trim() || "-";
+  const teamLeaderAddress = project.teamLeaderAddress ?? null;
   const initials =
-    managerName
+    (teamLeaderName !== "-" ? teamLeaderName : project.title)
       .split(" ")
       .filter(Boolean)
       .map((part) => part[0]?.toUpperCase())
@@ -419,10 +425,18 @@ function ProjectTableRow({
         <StatusBadge status={project.status} />
       </TableCell>
       <TableCell>
-        <div className="font-medium">{managerName}</div>
-        {creatorAddress ? (
+        <div className="font-medium">{supervisorName}</div>
+        {supervisorAddress ? (
           <p className="text-xs text-muted-foreground">
-            {shortenAddress(creatorAddress)}
+            {shortenAddress(supervisorAddress)}
+          </p>
+        ) : null}
+      </TableCell>
+      <TableCell>
+        <div className="font-medium">{teamLeaderName}</div>
+        {teamLeaderAddress ? (
+          <p className="text-xs text-muted-foreground">
+            {shortenAddress(teamLeaderAddress)}
           </p>
         ) : null}
       </TableCell>
