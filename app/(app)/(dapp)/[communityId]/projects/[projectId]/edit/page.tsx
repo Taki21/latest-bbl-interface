@@ -2,10 +2,11 @@
 
 import ProjectEditForm from "@/components/project/project-edit-form";
 import { useAccount } from "wagmi";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 export default function EditProjectPage() {
   const { address } = useAccount();
+  const router = useRouter();
   const { communityId, projectId } = useParams<{
     communityId: string;
     projectId: string;
@@ -19,7 +20,7 @@ export default function EditProjectPage() {
         communityId={communityId}
         projectId={projectId}
         callerAddress={address}
-        onSaved={() => history.back()}
+        onSaved={() => router.back()}
       />
     </div>
   );

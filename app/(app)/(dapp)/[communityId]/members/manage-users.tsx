@@ -43,7 +43,7 @@ interface Member {
 }
 
 // Enum strings exactly as Prisma expects
-const roles = ["Owner", "Supervisor", "Project_Manager", "Default"] as const;
+const roles = ["Owner", "Supervisor", "Team_Leader", "Default"] as const;
 
 // Convert enum → nice label
 const pretty = (r: string) =>

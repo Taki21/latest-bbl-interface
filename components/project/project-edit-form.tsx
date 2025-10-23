@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button }      from "@/components/ui/button";
 import { Input }       from "@/components/ui/input";
 import { Textarea }    from "@/components/ui/textarea";
@@ -74,7 +73,6 @@ export default function ProjectEditForm({
   callerAddress,
   onSaved,
 }: Props) {
-  const router = useRouter();
   const { address } = useAccount();
 
   /* ── Form state ───────────────────────────────────────────────── */
@@ -279,7 +277,6 @@ export default function ProjectEditForm({
         throw new Error(e.error || "Failed to save changes");
       }
       onSaved();
-      router.back();
     } catch (err: any) {
       console.error(err);
       setErr(err.message);
@@ -345,10 +342,10 @@ export default function ProjectEditForm({
           </SelectContent>
         </Select>
 
-        {/* Project Manager */}
+        {/* Team Leader */}
         <Select value={teamLeaderId} onValueChange={(v) => setTeamLeaderId(v)}>
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Project Manager">
+            <SelectValue placeholder="Team Leader">
               {memberLabel(teamLeaderId)}
             </SelectValue>
           </SelectTrigger>

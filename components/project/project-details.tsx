@@ -53,14 +53,14 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
         )}
       </CardHeader>
       <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Project Manager */}
+        {/* Team Leader */}
         <div className="flex items-center space-x-3">
           <Avatar className="h-12 w-12">
             <AvatarImage src={undefined} alt={name} />
             <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
           <div>
-            <p className="text-sm text-muted-foreground">Project Manager</p>
+            <p className="text-sm text-muted-foreground">Team Leader</p>
             <p className="font-medium">{name}</p>
           </div>
         </div>

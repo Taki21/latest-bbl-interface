@@ -27,7 +27,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    // 2) Recipient must be Supervisor or Project Manager
+    // 2) Recipient must be Supervisor or Team Leader
     const recipient = await prisma.member.findUnique({
       where: { id: recipientId },
       select: { role: true, communityId: true },
@@ -36,7 +36,7 @@ export async function POST(
       !recipient ||
       recipient.communityId !== communityId ||
       (recipient.role !== MemberRole.Supervisor &&
-        recipient.role !== MemberRole.Project_Manager)
+        recipient.role !== MemberRole.Team_Leader)
     ) {
       return NextResponse.json({ error: "Invalid recipient" }, { status: 400 });
     }

@@ -144,7 +144,7 @@ export async function POST(
     if (tl.role === MemberRole.Default) {
       await prisma.member.update({
         where: { id: teamLeaderId },
-        data: { role: MemberRole.Project_Manager },
+        data: { role: MemberRole.Team_Leader },
       });
     }
 

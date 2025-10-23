@@ -274,9 +274,9 @@ export default function ProjectForm({
           </div>
         </div>
 
-        {/* Project Manager */}
+        {/* Team Leader */}
         <div>
-          <label className="block text-sm font-medium">Project Manager</label>
+          <label className="block text-sm font-medium">Team Leader</label>
           <select
             className="w-full rounded border p-2"
             value={teamLeaderId}

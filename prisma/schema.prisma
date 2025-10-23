@@ -10,12 +10,11 @@ datasource db {
 /* ───────────── ENUMS ───────────── */
 
 enum MemberRole {
-  Owner           @map("Owner")
-  Supervisor      @map("Supervisor")
-  Project_Manager @map("Project Manager")
-  Default         @map("Default")
-  Professor       @map("Professor")
-  Team_Leader     @map("Team Leader")
+  Owner       @map("Owner")
+  Supervisor  @map("Supervisor")
+  Team_Leader @map("Team Leader")
+  Default     @map("Default")
+  Professor   @map("Professor")
 }
 
 enum TaskStatus {

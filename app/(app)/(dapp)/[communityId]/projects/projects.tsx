@@ -45,6 +45,7 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import ProjectForm from "@/components/project/project-form";
+import ProjectEditForm from "@/components/project/project-edit-form";
 import type { Project as PrismaProject } from "@prisma/client";
 
 interface Tag {
@@ -71,6 +72,8 @@ export default function ProjectsPage() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
+
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
 
   const selectedTags = useMemo(
     () => tags.filter((tag) => selectedTagIds.includes(tag.id)),
@@ -142,6 +145,16 @@ export default function ProjectsPage() {
     );
 
   const clearFilters = () => setSelectedTagIds([]);
+
+  const handleEditProject = (projectId: string) => {
+    if (!address) return;
+    setEditingProjectId(projectId);
+  };
+
+  const handleEditSaved = () => {
+    setEditingProjectId(null);
+    refresh();
+  };
 
   /* ─── render ──────────────────────────────────── */
   return (
@@ -250,6 +263,7 @@ export default function ProjectsPage() {
                   currentAddress={address}
                   isAdmin={isAdmin}
                   onDelete={refresh}
+                  onEdit={handleEditProject}
                 />
               ))
             )}
@@ -274,6 +288,36 @@ export default function ProjectsPage() {
           />
         </DialogContent>
       </Dialog>
+
+      {/* Edit Project Dialog */}
+      <Dialog
+        open={Boolean(editingProjectId)}
+        onOpenChange={(next) => {
+          if (!next) setEditingProjectId(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Project</DialogTitle>
+          </DialogHeader>
+
+          {editingProjectId ? (
+            address ? (
+              <ProjectEditForm
+                key={editingProjectId}
+                communityId={communityId}
+                projectId={editingProjectId}
+                callerAddress={address}
+                onSaved={handleEditSaved}
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Connect your wallet to edit projects.
+              </p>
+            )
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -284,6 +328,7 @@ interface ProjectTableRowProps {
   currentAddress?: string | null;
   isAdmin: boolean;
   onDelete?: () => void;
+  onEdit?: (projectId: string) => void;
 }
 
 function ProjectTableRow({
@@ -292,9 +337,9 @@ function ProjectTableRow({
   currentAddress,
   isAdmin,
   onDelete,
+  onEdit,
 }: ProjectTableRowProps) {
   const href = communityId ? `/${communityId}/projects/${project.id}` : "#";
-  const editHref = communityId ? `/${communityId}/projects/${project.id}/edit` : "#";
   const creatorAddress = project.creatorAddress ?? project.creator?.address ?? "";
   const meIsCreator =
     currentAddress &&
@@ -398,9 +443,9 @@ function ProjectTableRow({
           canEdit={canEdit}
           canDelete={canDelete}
           href={href}
-          editHref={editHref}
           projectTitle={project.title}
           onDelete={handleDelete}
+          onEdit={onEdit ? () => onEdit(project.id) : undefined}
         />
       </TableCell>
     </TableRow>
@@ -411,16 +456,16 @@ function ProjectRowActions({
   canEdit,
   canDelete,
   href,
-  editHref,
   projectTitle,
   onDelete,
+  onEdit,
 }: {
   canEdit: boolean;
   canDelete: boolean;
   href: string;
-  editHref: string;
   projectTitle: string;
   onDelete: () => Promise<void> | void;
+  onEdit?: () => void;
 }) {
   const share = async () => {
     const url = window.location.origin + href;
@@ -445,11 +490,15 @@ function ProjectRowActions({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
         {canEdit ? (
-          <DropdownMenuItem asChild>
-            <Link href={editHref} className="flex items-center">
-              <Pencil className="mr-2 h-4 w-4" />
-              Edit project
-            </Link>
+          <DropdownMenuItem
+            onSelect={() => {
+              onEdit?.();
+            }}
+            disabled={!onEdit}
+            className="flex items-center"
+          >
+            <Pencil className="mr-2 h-4 w-4" />
+            Edit project
           </DropdownMenuItem>
         ) : null}
         <DropdownMenuItem asChild>

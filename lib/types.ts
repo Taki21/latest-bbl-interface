@@ -4,7 +4,7 @@ export interface User {
   email: string
   tasksCompleted: number
   balance: number
-  role: "Owner" | "Supervisor" | "Project Manager" | "Member"
+  role: "Owner" | "Supervisor" | "Team Leader" | "Member"
   createdAt?: string
   updatedAt?: string
 }

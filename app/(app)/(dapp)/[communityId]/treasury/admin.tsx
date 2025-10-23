@@ -40,7 +40,7 @@ export default function TreasuryPage() {
           ? data.members
           : [];
         setMembers(
-          list.filter((x) => x.role === "Supervisor" || x.role === "Project_Manager")
+          list.filter((x) => x.role === "Supervisor" || x.role === "Team_Leader")
         );
       });
 
@@ -126,7 +126,7 @@ export default function TreasuryPage() {
                 ? members.find((m) => m.id === recipient)?.name ||
                   members.find((m) => m.id === recipient)?.user.name ||
                   members.find((m) => m.id === recipient)?.user.address
-                : "Select Supervisor / Project Manager"}
+                : "Select Supervisor / Team Leader"}
             </SelectTrigger>
             <SelectContent>
               {members.map((m) => (

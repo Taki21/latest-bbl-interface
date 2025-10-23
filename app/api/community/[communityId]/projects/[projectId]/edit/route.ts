@@ -184,7 +184,7 @@ export async function POST(
       }),
       prisma.member.updateMany({
         where: { id: teamLeaderId, role: MemberRole.Default },
-        data: { role: MemberRole.Project_Manager },
+        data: { role: MemberRole.Team_Leader },
       }),
       deleteTagsOp,
     ];

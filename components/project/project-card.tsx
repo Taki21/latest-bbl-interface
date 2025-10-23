@@ -159,7 +159,7 @@ export function ProjectCard({
               <AvatarFallback>{initials}</AvatarFallback>
             </Avatar>
             <div>
-              <p className="text-xs text-muted-foreground">Project Manager</p>
+              <p className="text-xs text-muted-foreground">Team Leader</p>
               <p className="text-sm">{project.teamLeader}</p>
             </div>
           </div>
