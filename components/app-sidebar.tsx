@@ -118,7 +118,7 @@ export function AppSidebar({ communityId, ...props }: AppSidebarProps) {
       </SidebarContent>
 
       <SidebarFooter>
-        <NavUser user={user} />
+        <NavUser user={user} communityId={communityId} />
       </SidebarFooter>
     </Sidebar>
   );

@@ -5,6 +5,7 @@ import {
 } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { LogOut } from "lucide-react"
+import { useParams, useRouter } from "next/navigation"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -21,6 +22,10 @@ import { useDisconnect, useWalletClient } from "wagmi"
 import { usePrivy } from "@privy-io/react-auth"
 
 export default function WalletButton() {
+
+    const params = useParams();
+    const communityId = params?.communityId ?? "";
+    const router = useRouter();
 
     const { disconnect } = useDisconnect();
     const { data: walletClient } = useWalletClient();
@@ -41,6 +46,8 @@ export default function WalletButton() {
             });
         }
     }, [privyUser, walletClient]);
+    const dashboardHref = communityId ? `/${communityId}/dashboard` : "/dashboard";
+    const settingsHref = communityId ? `/${communityId}/settings` : "/settings";
 
     return (
         <DropdownMenu>
@@ -63,19 +70,19 @@ export default function WalletButton() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
-                    <DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => router.push(dashboardHref)}>
                         Profile
                         <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
                     </DropdownMenuItem>
-                    <DropdownMenuItem>
+                    {/* <DropdownMenuItem>
                         Billing
                         <DropdownMenuShortcut>⌘B</DropdownMenuShortcut>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
+                    </DropdownMenuItem> */}
+                    <DropdownMenuItem onClick={() => router.push(settingsHref)}>
                         Settings
                         <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
                     </DropdownMenuItem>
-                    <DropdownMenuItem>New Team</DropdownMenuItem>
+                    {/* <DropdownMenuItem>New Team</DropdownMenuItem> */}
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => { disconnect(); logout(); }}>
