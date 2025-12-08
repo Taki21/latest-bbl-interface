@@ -25,6 +25,18 @@ export async function GET(
             email: true,
           },
         },
+        memberTags: {
+          select: {
+            id: true,
+            tag: {
+              select: {
+                id: true,
+                label: true,
+                slug: true,
+              },
+            },
+          },
+        },
       },
       orderBy: { role: "asc" },
     });
@@ -36,6 +48,7 @@ export async function GET(
       allocation: m.allocation,
       name: (m as any).name ?? (m as any).user?.name ?? null,
       user: m.user,
+      memberTags: m.memberTags,
     }));
 
     return NextResponse.json(safeJson(members), { status: 200 });
@@ -59,6 +72,18 @@ export async function GET(
               email: true,
             },
           },
+          memberTags: {
+            select: {
+              id: true,
+              tag: {
+                select: {
+                  id: true,
+                  label: true,
+                  slug: true,
+                },
+              },
+            },
+          },
         },
         orderBy: { role: "asc" },
       });
@@ -70,6 +95,7 @@ export async function GET(
         allocation: m.allocation,
         name: (m as any).user?.name ?? null,
         user: m.user,
+        memberTags: m.memberTags,
       }));
 
       return NextResponse.json(safeJson(members), { status: 200 });

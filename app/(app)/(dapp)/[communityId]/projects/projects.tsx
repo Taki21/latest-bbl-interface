@@ -112,7 +112,8 @@ export default function ProjectsPage() {
       })
       .then((data: Tag[]) => {
         if (Array.isArray(data)) {
-          const sorted = [...data].sort((a, b) =>
+          const filtered = data.filter((tag) => !tag.slug?.startsWith("member-"));
+          const sorted = [...filtered].sort((a, b) =>
             a.label.localeCompare(b.label, undefined, { sensitivity: "base" })
           );
           setTags(sorted);
