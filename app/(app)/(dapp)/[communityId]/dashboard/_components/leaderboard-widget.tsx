@@ -2,6 +2,7 @@
 
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { MemberProfileHover } from "@/components/member/member-profile-hover";
 
 interface MemberItem {
   id: string;
@@ -10,6 +11,7 @@ interface MemberItem {
   allocation?: string | number | bigint;
   name?: string | null;
   user: { name: string | null; address: string };
+  memberTags?: { id: string; tag: { id: string; label: string; slug: string } }[];
 }
 
 function toNumber(v: string | number | bigint | null | undefined) {
@@ -47,9 +49,11 @@ export default function LeaderboardWidget({ members, tokenSymbol }: { members: M
             return (
               <div key={m.id} className="flex items-center gap-3">
                 <span className="w-5 text-xs text-muted-foreground">{idx + 1}</span>
-                <Avatar className="h-7 w-7">
-                  <AvatarFallback>{initials}</AvatarFallback>
-                </Avatar>
+                <MemberProfileHover member={m}>
+                  <Avatar className="h-7 w-7">
+                    <AvatarFallback>{initials}</AvatarFallback>
+                  </Avatar>
+                </MemberProfileHover>
                 <div className="flex-1 truncate text-sm">{label}</div>
                 <div className="text-sm font-medium">
                   {toNumber(m.balance).toLocaleString()} {sym}
@@ -62,4 +66,3 @@ export default function LeaderboardWidget({ members, tokenSymbol }: { members: M
     </Card>
   );
 }
-

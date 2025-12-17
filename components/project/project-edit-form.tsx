@@ -27,6 +27,43 @@ import {
 import { Plus }        from "lucide-react";
 import { useAccount }  from "wagmi";
 
+const toDateInputValue = (value: string | Date | null | undefined) => {
+  if (!value) return "";
+  try {
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toISOString().slice(0, 10);
+  } catch {
+    return "";
+  }
+};
+
+const toStringValue = (value: string | number | bigint | null | undefined) => {
+  if (value === null || value === undefined) return "";
+  try {
+    return `${value}`;
+  } catch {
+    return "";
+  }
+};
+
+const normalizeStatus = (
+  value: string | null | undefined
+): "active" | "completed" | "on_hold" => {
+  switch ((value ?? "").toLowerCase()) {
+    case "completed":
+    case "complete":
+    case "done":
+      return "completed";
+    case "on_hold":
+    case "hold":
+    case "paused":
+      return "on_hold";
+    default:
+      return "active";
+  }
+};
+
 interface Member {
   id: string;
   role: string;
@@ -43,16 +80,25 @@ interface Tag {
   slug: string;
 }
 
+interface ProjectMemberRef {
+  id: string | null;
+  name?: string | null;
+  user?: { id?: string | null; name?: string | null; address?: string | null } | null;
+}
+
 interface ProjectPayload {
   id: string;
-  title:       string;
-  description: string;
-  deadline:    string;
-  status:      "active" | "completed" | "on_hold";
-  balance:     string;
-  teamLeaderId: string;
-  members:     { id: string }[];
-  tags?:       Tag[];
+  title: string | null;
+  description: string | null;
+  deadline: string | Date | null;
+  status: string | null;
+  balance: string | number | bigint | null;
+  creatorId: string;
+  creator?: ProjectMemberRef | null;
+  teamLeaderId: string | null;
+  teamLeader?: ProjectMemberRef | null;
+  members: ProjectMemberRef[];
+  tags?: Tag[];
 }
 
 interface Props {
@@ -81,6 +127,7 @@ export default function ProjectEditForm({
   const [deadline, setDeadline]     = useState("");
   const [status, setStatus]         = useState<"active" | "completed" | "on_hold">("active");
   const [budget, setBudget]         = useState("");    // integer string
+  const [supervisorId, setSupervisorId] = useState("");
   const [teamLeaderId, setTeamLeaderId] = useState("");
   const [memberIds, setMemberIds]       = useState<string[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
@@ -89,6 +136,9 @@ export default function ProjectEditForm({
   const [members, setMembers]       = useState<Member[]>([]);
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [myAllocation, setMyAllocation] = useState<bigint>(0n);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [teamLeaderLabelFallback, setTeamLeaderLabelFallback] = useState("");
+  const [supervisorLabelFallback, setSupervisorLabelFallback] = useState("");
 
   /* ── UI state ─────────────────────────────────────────────────── */
   const [loading, setLoading]       = useState(false);
@@ -121,6 +171,15 @@ export default function ProjectEditForm({
     members.find((m) => m.id === id)?.user.address ||
     "—";
 
+  const displayMember = (id: string, fallback: string, placeholder: string) => {
+    if (id) {
+      const label = memberLabel(id);
+      if (label && label !== "—") return label;
+      if (fallback) return fallback;
+    }
+    return fallback || placeholder;
+  };
+
   /* ── 1) Load only **your** Member record for allocation ───────── */
   useEffect(() => {
     if (!callerAddress) return;
@@ -135,6 +194,7 @@ export default function ProjectEditForm({
           throw new Error("Not a member of this community");
         }
         setMyAllocation(BigInt(me.allocation));
+        setIsAdmin(me.role === "Owner" || me.role === "Supervisor");
       })
       .catch((e) => {
         console.error(e);
@@ -150,7 +210,10 @@ export default function ProjectEditForm({
         return res.json();
       })
       .then((tags: Tag[]) => {
-        if (Array.isArray(tags)) setAvailableTags(sortTags(tags));
+        if (Array.isArray(tags)) {
+          const filtered = tags.filter((tag) => !tag.slug?.startsWith("member-"));
+          setAvailableTags(sortTags(filtered));
+        }
       })
       .catch(() => setAvailableTags([]));
   }, [communityId]);
@@ -181,20 +244,90 @@ export default function ProjectEditForm({
           : [];
 
         // Populate form defaults
-        setTitle(proj.title);
-        setDescription(proj.description);
-        setDeadline(proj.deadline.split("T")[0]);
-        setStatus(proj.status);
-        setBudget(proj.balance.toString());
-        setTeamLeaderId(proj.teamLeaderId);
+        setTitle(proj.title ?? "");
+        setDescription(proj.description ?? "");
+        setDeadline(toDateInputValue(proj.deadline));
+        setStatus(normalizeStatus(proj.status));
+        setBudget(toStringValue(proj.balance));
 
-        const userIds = proj.members.map((m) => m.id);
-        setMemberIds(
-          mems
-            .filter((m) => userIds.includes(m.user.id))
-            .map((m) => m.id)
-        );
+        const projectMemberIdSet = new Set<string>();
+        const projectMemberUserIdSet = new Set<string>();
+        if (Array.isArray(proj.members)) {
+          proj.members.forEach((member) => {
+            if (!member) return;
+            if (member.id) projectMemberIdSet.add(member.id);
+            const userId = member.user?.id;
+            if (userId) projectMemberUserIdSet.add(userId);
+          });
+        }
+
+        const resolvedMemberIds = mems
+          .filter(
+            (member) =>
+              projectMemberIdSet.has(member.id) ||
+              projectMemberUserIdSet.has(member.user.id)
+          )
+          .map((member) => member.id);
+        setMemberIds(resolvedMemberIds);
         setMembers(mems);
+
+        const matchedSupervisor =
+          mems.find((member) => member.id === proj.creatorId) ??
+          (proj.creator?.id
+            ? mems.find((member) => member.id === proj.creator?.id)
+            : undefined) ??
+          (proj.creator?.user?.id
+            ? mems.find((member) => member.user.id === proj.creator?.user?.id)
+            : undefined);
+        const fallbackSupervisor = matchedSupervisor ?? mems[0];
+        const nextSupervisorId =
+          matchedSupervisor?.id ??
+          proj.creatorId ??
+          proj.creator?.id ??
+          fallbackSupervisor?.id ??
+          "";
+        setSupervisorId(nextSupervisorId);
+        setSupervisorLabelFallback(
+          matchedSupervisor?.name ||
+            matchedSupervisor?.user?.name ||
+            matchedSupervisor?.user?.address ||
+            proj.creator?.name ||
+            proj.creator?.user?.name ||
+            proj.creator?.user?.address ||
+            fallbackSupervisor?.name ||
+            fallbackSupervisor?.user?.name ||
+            fallbackSupervisor?.user?.address ||
+            ""
+        );
+
+        const matchedLeader =
+          mems.find((member) => member.id === proj.teamLeaderId) ??
+          (proj.teamLeader?.id
+            ? mems.find((member) => member.id === proj.teamLeader?.id)
+            : undefined) ??
+          (proj.teamLeader?.user?.id
+            ? mems.find((member) => member.user.id === proj.teamLeader?.user?.id)
+            : undefined);
+        const fallbackLeader = matchedLeader ?? mems[0];
+        const nextLeaderId =
+          matchedLeader?.id ??
+          proj.teamLeaderId ??
+          proj.teamLeader?.id ??
+          fallbackLeader?.id ??
+          "";
+        setTeamLeaderId(nextLeaderId);
+        setTeamLeaderLabelFallback(
+          matchedLeader?.name ||
+            matchedLeader?.user?.name ||
+            matchedLeader?.user?.address ||
+            proj.teamLeader?.name ||
+            proj.teamLeader?.user?.name ||
+            proj.teamLeader?.user?.address ||
+            fallbackLeader?.name ||
+            fallbackLeader?.user?.name ||
+            fallbackLeader?.user?.address ||
+            ""
+        );
 
         const tagList = Array.isArray(proj.tags) ? proj.tags : [];
         setSelectedTagIds(tagList.map((tag) => tag.id));
@@ -250,6 +383,18 @@ export default function ProjectEditForm({
   /* ── 4) Submit updated project ────────────────────────────────── */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Ensure we always submit a concrete team leader id when members are loaded
+    const leaderId = teamLeaderId || members[0]?.id || "";
+    if (!leaderId) {
+      setErr("Please select a team leader");
+      return;
+    }
+    if (leaderId !== teamLeaderId) {
+      setTeamLeaderId(leaderId);
+    }
+    const supervisor = supervisorId || members[0]?.id || "";
+
     setLoading(true);
     setErr(null);
 
@@ -265,10 +410,11 @@ export default function ProjectEditForm({
             deadline,
             status,
             balance:       budget,
-            teamLeaderId,
+            teamLeaderId:  leaderId,
             memberIds,
             tagIds:        selectedTagIds,
             address:       callerAddress,
+            ...(isAdmin ? { supervisorId: supervisor } : {}),
           }),
         }
       );
@@ -342,46 +488,79 @@ export default function ProjectEditForm({
           </SelectContent>
         </Select>
 
+        {/* Supervisor (admins only) */}
+        <div className="space-y-1">
+          <label className="block text-sm font-medium">Supervisor</label>
+          {isAdmin ? (
+            <Select value={supervisorId} onValueChange={(v) => setSupervisorId(v)}>
+              <SelectTrigger className="w-full">
+                <span className="truncate">
+                  {displayMember(supervisorId, supervisorLabelFallback, "Supervisor")}
+                </span>
+              </SelectTrigger>
+              <SelectContent>
+                {members.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.name || m.user.name || m.user.address}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Input
+              value={displayMember(supervisorId, supervisorLabelFallback, "Supervisor")}
+              readOnly
+              disabled
+            />
+          )}
+        </div>
+
         {/* Team Leader */}
-        <Select value={teamLeaderId} onValueChange={(v) => setTeamLeaderId(v)}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Team Leader">
-              {memberLabel(teamLeaderId)}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {members.map((m) => (
-              <SelectItem key={m.id} value={m.id}>
-                {m.name || m.user.name || m.user.address}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="space-y-1">
+          <label className="block text-sm font-medium">Team Leader</label>
+          <Select value={teamLeaderId} onValueChange={(v) => setTeamLeaderId(v)}>
+            <SelectTrigger className="w-full">
+              <span className="truncate">
+                {displayMember(teamLeaderId, teamLeaderLabelFallback, "Team Leader")}
+              </span>
+            </SelectTrigger>
+            <SelectContent>
+              {members.map((m) => (
+                <SelectItem key={m.id} value={m.id}>
+                  {m.name || m.user.name || m.user.address}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
         {/* Members Multi-Select */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className="w-full justify-between">
-              {memberIds.length
-                ? `${memberIds.length} selected`
-                : "Select members"}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="max-h-60 overflow-auto p-2">
-            {members.map((m) => (
-              <label
-                key={m.id}
-                className="flex items-center space-x-2 py-1 hover:bg-muted"
-              >
-                <Checkbox
-                  checked={memberIds.includes(m.id)}
-                  onCheckedChange={() => toggleMember(m.id)}
-                />
-                <span>{m.name || m.user.name || m.user.address}</span>
-              </label>
-            ))}
-          </PopoverContent>
-        </Popover>
+        <div className="space-y-1">
+          <label className="block text-sm font-medium">Members</label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-full justify-between">
+                {memberIds.length
+                  ? `${memberIds.length} selected`
+                  : "Select members"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="max-h-60 overflow-auto p-2">
+              {members.map((m) => (
+                <label
+                  key={m.id}
+                  className="flex items-center space-x-2 py-1 hover:bg-muted"
+                >
+                  <Checkbox
+                    checked={memberIds.includes(m.id)}
+                    onCheckedChange={() => toggleMember(m.id)}
+                  />
+                  <span>{m.name || m.user.name || m.user.address}</span>
+                </label>
+              ))}
+            </PopoverContent>
+          </Popover>
+        </div>
 
         {/* Tags */}
         <div className="space-y-2">

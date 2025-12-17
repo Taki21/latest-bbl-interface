@@ -13,12 +13,26 @@ import {
   AvatarFallback,
 } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { MemberProfileHover } from "@/components/member/member-profile-hover";
 
 interface User {
   id: string;
   name: string | null;
   address: string;
   email: string | null;
+}
+
+interface MemberTagLink {
+  id: string;
+  tag: { id: string; label: string; slug: string };
+}
+
+interface MemberProfile {
+  id: string;
+  name?: string | null;
+  role?: string | null;
+  user: User;
+  memberTags?: MemberTagLink[];
 }
 
 interface ProjectDetailsProps {
@@ -29,15 +43,16 @@ interface ProjectDetailsProps {
     status: string;
     balance: string | number | bigint;
     deadline: string;
-    teamLeader: User;
-    members: User[];
+    teamLeader: MemberProfile | null;
+    members: MemberProfile[];
     tasks: { id: string; name: string }[];
     tags?: { id: string; label: string; slug: string }[];
   };
 }
 
 export function ProjectDetails({ project }: ProjectDetailsProps) {
-  const name = project.teamLeader.name ?? project.teamLeader.address ?? "—";
+  const leader = project.teamLeader;
+  const name = leader?.name ?? leader?.user?.name ?? leader?.user?.address ?? "—";
   const initials = name
     .split(" ")
     .map((w) => w[0])
@@ -55,10 +70,12 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
       <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Team Leader */}
         <div className="flex items-center space-x-3">
-          <Avatar className="h-12 w-12">
-            <AvatarImage src={undefined} alt={name} />
-            <AvatarFallback>{initials}</AvatarFallback>
-          </Avatar>
+          <MemberProfileHover member={leader}>
+            <Avatar className="h-12 w-12">
+              <AvatarImage src={undefined} alt={name} />
+              <AvatarFallback>{initials}</AvatarFallback>
+            </Avatar>
+          </MemberProfileHover>
           <div>
             <p className="text-sm text-muted-foreground">Team Leader</p>
             <p className="font-medium">{name}</p>

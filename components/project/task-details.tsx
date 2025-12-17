@@ -43,6 +43,12 @@ import {
   Share2,
 } from "lucide-react";
 import Editor from "../editor";
+import { MemberProfileHover } from "@/components/member/member-profile-hover";
+
+interface MemberTagLink {
+  id: string;
+  tag: { id: string; label: string; slug: string };
+}
 
 interface User {
   id: string;
@@ -69,6 +75,9 @@ interface TaskDetailsProps {
 interface MemberOption {
   id: string;
   user: User;
+  name?: string | null;
+  role?: string | null;
+  memberTags?: MemberTagLink[];
 }
 
 const STATUS_OPTIONS = [
@@ -340,13 +349,6 @@ export function TaskDetails({ task, refresh }: TaskDetailsProps) {
     }
   }, [communityId, projectId, taskState.id, taskState.name]);
 
-  const creatorName = taskState.creator.name ?? taskState.creator.address;
-  const creatorInitials = creatorName
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase();
-
   const memberLookup = useMemo(() => {
     const map = new Map<string, MemberOption>();
     communityMembers.forEach((member) => {
@@ -355,6 +357,17 @@ export function TaskDetails({ task, refresh }: TaskDetailsProps) {
     });
     return map;
   }, [communityMembers]);
+
+  const creatorName = taskState.creator.name ?? taskState.creator.address;
+  const creatorInitials = creatorName
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase();
+  const creatorMember =
+    memberLookup.get(taskState.creator.id) ||
+    memberLookup.get(taskState.creator.address.toLowerCase()) ||
+    null;
 
   const assignedMembersDetailed = useMemo(() => {
     if (assignedMemberIds.length) {
@@ -913,10 +926,12 @@ export function TaskDetails({ task, refresh }: TaskDetailsProps) {
           </div>
 
           <div className="flex items-center space-x-3">
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={undefined} alt={creatorName} />
-              <AvatarFallback>{creatorInitials}</AvatarFallback>
-            </Avatar>
+            <MemberProfileHover member={creatorMember}>
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={undefined} alt={creatorName} />
+                <AvatarFallback>{creatorInitials}</AvatarFallback>
+              </Avatar>
+            </MemberProfileHover>
             <div>
               <p className="text-xs text-muted-foreground">Created by</p>
               <p className="font-medium">{creatorName}</p>
@@ -943,17 +958,25 @@ export function TaskDetails({ task, refresh }: TaskDetailsProps) {
 
                   if (!canEdit) {
                     return (
-                      <div key={member.id} title={name}>
+                      <MemberProfileHover key={member.id} member={member}>
                         {avatar}
-                      </div>
+                      </MemberProfileHover>
                     );
                   }
 
                   return (
                     <DropdownMenu key={member.id}>
-                      <DropdownMenuTrigger asChild>
-                        <button type="button" title={name}>{avatar}</button>
-                      </DropdownMenuTrigger>
+                      <MemberProfileHover member={member}>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            title={name}
+                            className="rounded-full focus:outline-none"
+                          >
+                            {avatar}
+                          </button>
+                        </DropdownMenuTrigger>
+                      </MemberProfileHover>
                       <DropdownMenuContent align="start" className="w-36">
                         <DropdownMenuItem
                           onClick={() => handleRemoveMember(member.id)}

@@ -126,7 +126,10 @@ export default function ProjectForm({
         return res.json();
       })
       .then((tags: Tag[]) => {
-        if (Array.isArray(tags)) setAvailableTags(sortTags(tags));
+        if (Array.isArray(tags)) {
+          const filtered = tags.filter((tag) => !tag.slug?.startsWith("member-"));
+          setAvailableTags(sortTags(filtered));
+        }
       })
       .catch(() => setAvailableTags([]));
   }, [communityId]);

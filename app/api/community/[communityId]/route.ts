@@ -30,19 +30,81 @@ export async function GET(
         members: {
           include: {
             user: true,
+            memberTags: {
+              include: {
+                tag: {
+                  select: { id: true, label: true, slug: true },
+                },
+              },
+            },
           },
         },
         projects: {
           include: {
-            members: true,
-            tasks: {
+            members: {
               include: {
-                creator: { include: { user: true } },
-                members: { include: { user: true } },
+                user: true,
+                memberTags: {
+                  include: {
+                    tag: {
+                      select: { id: true, label: true, slug: true },
+                    },
+                  },
+                },
               },
             },
-            teamLeader: { include: { user: true } },
-            creator:    { include: { user: true } },
+            tasks: {
+              include: {
+                creator: {
+                  include: {
+                    user: true,
+                    memberTags: {
+                      include: {
+                        tag: {
+                          select: { id: true, label: true, slug: true },
+                        },
+                      },
+                    },
+                  },
+                },
+                members: {
+                  include: {
+                    user: true,
+                    memberTags: {
+                      include: {
+                        tag: {
+                          select: { id: true, label: true, slug: true },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            teamLeader: {
+              include: {
+                user: true,
+                memberTags: {
+                  include: {
+                    tag: {
+                      select: { id: true, label: true, slug: true },
+                    },
+                  },
+                },
+              },
+            },
+            creator: {
+              include: {
+                user: true,
+                memberTags: {
+                  include: {
+                    tag: {
+                      select: { id: true, label: true, slug: true },
+                    },
+                  },
+                },
+              },
+            },
           },
         },
       },

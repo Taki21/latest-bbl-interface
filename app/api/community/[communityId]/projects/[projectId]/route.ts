@@ -13,19 +13,47 @@ export async function GET(
     const project = await prisma.project.findFirst({
       where: { id: projectId, communityId },
       include: {
-        // flatten leader → name+id
         teamLeader: {
           select: {
             id: true,
+            name: true,
+            role: true,
+            memberTags: {
+              select: {
+                id: true,
+                tag: { select: { id: true, label: true, slug: true } },
+              },
+            },
             user: {
               select: { id: true, name: true, address: true, email: true },
             },
           },
         },
-        // members of the project
         members: {
           select: {
             id: true,
+            name: true,
+            role: true,
+            memberTags: {
+              select: {
+                id: true,
+                tag: { select: { id: true, label: true, slug: true } },
+              },
+            },
+            user: { select: { id: true, name: true, address: true, email: true } },
+          },
+        },
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            role: true,
+            memberTags: {
+              select: {
+                id: true,
+                tag: { select: { id: true, label: true, slug: true } },
+              },
+            },
             user: { select: { id: true, name: true, address: true, email: true } },
           },
         },
@@ -72,8 +100,31 @@ export async function GET(
     // massage shape for UI
     const out = {
       ...project,
-      teamLeader: project.teamLeader.user,       // {id,name,...}
-      members: project.members.map((m) => m.user),
+      teamLeader: project.teamLeader
+        ? {
+            id: project.teamLeader.id,
+            name: project.teamLeader.name ?? project.teamLeader.user?.name ?? null,
+            role: project.teamLeader.role ?? null,
+            user: project.teamLeader.user,
+            memberTags: project.teamLeader.memberTags,
+          }
+        : null,
+      creator: project.creator
+        ? {
+            id: project.creator.id,
+            name: project.creator.name ?? project.creator.user?.name ?? null,
+            role: project.creator.role ?? null,
+            user: project.creator.user,
+            memberTags: project.creator.memberTags,
+          }
+        : null,
+      members: project.members.map((m) => ({
+        id: m.id,
+        name: m.name ?? m.user?.name ?? null,
+        role: m.role ?? null,
+        user: m.user,
+        memberTags: m.memberTags,
+      })),
       tasks: project.tasks.map((t) => ({
         ...t,
         creator: t.creator.user,

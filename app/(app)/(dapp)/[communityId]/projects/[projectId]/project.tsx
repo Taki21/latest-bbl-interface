@@ -22,6 +22,19 @@ interface User {
   email: string | null;
 }
 
+interface MemberTagLink {
+  id: string;
+  tag: { id: string; label: string; slug: string };
+}
+
+interface MemberProfile {
+  id: string;
+  name?: string | null;
+  role?: string | null;
+  user: User;
+  memberTags?: MemberTagLink[];
+}
+
 interface Tag {
   id: string;
   label: string;
@@ -47,8 +60,8 @@ interface Project {
   status: string;
   balance: string | number | bigint;
   deadline: string;
-  teamLeader: User;
-  members: User[];
+  teamLeader: MemberProfile | null;
+  members: MemberProfile[];
   tasks: Task[];
   tags?: Tag[];
 }
@@ -109,10 +122,11 @@ export default function ProjectPage() {
   if (!project) return <p className="p-4">Loading...</p>;
 
   // only Owner, Supervisor, or teamLeader can create tasks
+  const teamLeaderAddress = project.teamLeader?.user?.address?.toLowerCase();
   const canCreateTask =
     role === "Owner" ||
     role === "Supervisor" ||
-    project.teamLeader.address.toLowerCase() === address?.toLowerCase();
+    (teamLeaderAddress && teamLeaderAddress === address?.toLowerCase());
 
   return (
     <div className="py-8 space-y-8">
