@@ -43,6 +43,20 @@ export async function GET(
             user: { select: { id: true, name: true, address: true, email: true } },
           },
         },
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            role: true,
+            memberTags: {
+              select: {
+                id: true,
+                tag: { select: { id: true, label: true, slug: true } },
+              },
+            },
+            user: { select: { id: true, name: true, address: true, email: true } },
+          },
+        },
         // all tasks, with creator + members
         tasks: {
           select: {
@@ -93,6 +107,15 @@ export async function GET(
             role: project.teamLeader.role ?? null,
             user: project.teamLeader.user,
             memberTags: project.teamLeader.memberTags,
+          }
+        : null,
+      creator: project.creator
+        ? {
+            id: project.creator.id,
+            name: project.creator.name ?? project.creator.user?.name ?? null,
+            role: project.creator.role ?? null,
+            user: project.creator.user,
+            memberTags: project.creator.memberTags,
           }
         : null,
       members: project.members.map((m) => ({

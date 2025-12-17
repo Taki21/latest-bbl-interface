@@ -21,7 +21,10 @@ export async function POST(
       balance,   // new project budget (string)
       address,   // caller wallet address
       tagIds = [],
+      supervisorId,
     } = await req.json();
+    const requestedSupervisorId =
+      typeof supervisorId === "string" ? supervisorId.trim() : "";
 
     if (
       !title ||
@@ -77,7 +80,33 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    /* ── 3) Validate selected members ───────────────────────────── */
+    /* ── 3) Validate supervisor change (admin-only) ─────────────── */
+    let supervisorUpdate: { memberId: string; userId: string } | null = null;
+    if (requestedSupervisorId && requestedSupervisorId !== project.creatorId) {
+      if (!isAdmin) {
+        return NextResponse.json(
+          { error: "Only admins can change supervisor" },
+          { status: 403 }
+        );
+      }
+
+      const supervisor = await prisma.member.findFirst({
+        where: { id: requestedSupervisorId, communityId },
+        select: { id: true, userId: true },
+      });
+      if (!supervisor) {
+        return NextResponse.json(
+          { error: "Invalid supervisor" },
+          { status: 400 }
+        );
+      }
+      supervisorUpdate = {
+        memberId: supervisor.id,
+        userId: supervisor.userId,
+      };
+    }
+
+    /* ── 4) Validate selected members ───────────────────────────── */
     const memberList = memberIdList.length
       ? await prisma.member.findMany({
           where: { id: { in: memberIdList }, communityId },
@@ -88,7 +117,7 @@ export async function POST(
       return NextResponse.json({ error: "Invalid member list" }, { status: 400 });
     }
 
-    /* ── 4) Normalize + validate tags ───────────────────────────── */
+    /* ── 5) Normalize + validate tags ───────────────────────────── */
     const trimmedTagIds = rawTagIdList
       .filter((id: any): id is string => typeof id === "string")
       .map((id) => id.trim())
@@ -107,7 +136,7 @@ export async function POST(
       return NextResponse.json({ error: "Invalid tag list" }, { status: 400 });
     }
 
-    /* ── 5) Compute allocation delta ────────────────────────────── */
+    /* ── 6) Compute allocation delta ────────────────────────────── */
     const currentBudget = BigInt(project.balance);
     let decCaller = 0n;
     let incCaller = 0n;
@@ -124,7 +153,7 @@ export async function POST(
       incCaller = currentBudget - newBudget;
     }
 
-    /* ── 6) Build caller-allocation update if needed ───────────── */
+    /* ── 7) Build caller-allocation update if needed ───────────── */
     const callerUpdate =
       decCaller || incCaller
         ? prisma.member.update({
@@ -138,7 +167,7 @@ export async function POST(
           })
         : null;
 
-    /* ── 7) Prepare tag mutation ops ───────────────────────────── */
+    /* ── 8) Prepare tag mutation ops ───────────────────────────── */
     const deleteTagsOp = uniqueTagIds.length
       ? prisma.projectTag.deleteMany({
           where: {
@@ -161,21 +190,27 @@ export async function POST(
         })
       : null;
 
-    /* ── 8) Perform atomic transaction ──────────────────────────── */
+    const projectUpdateData: any = {
+      title,
+      description,
+      deadline,
+      status,
+      teamLeaderId,
+      balance: newBudget.toString(),
+      members: {
+        set: memberIdList.map((id) => ({ id })),
+      },
+    };
+    if (supervisorUpdate) {
+      projectUpdateData.creatorId = supervisorUpdate.memberId;
+      projectUpdateData.ownerId = supervisorUpdate.userId;
+    }
+
+    /* ── 9) Perform atomic transaction ──────────────────────────── */
     const txnOps = [
       prisma.project.update({
         where: { id: projectId },
-        data: {
-          title,
-          description,
-          deadline,
-          status,
-          teamLeaderId,
-          balance: newBudget.toString(),
-          members: {
-            set: memberIdList.map((id) => ({ id })),
-          },
-        },
+        data: projectUpdateData,
         include: {
           projectTags: {
             include: { tag: { select: { id: true, slug: true, label: true } } },
