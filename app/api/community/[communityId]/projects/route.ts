@@ -28,17 +28,35 @@ export async function GET(
     }
 
     const tagIdList = Array.from(tagFilters);
+    const searchQuery = url.searchParams.get("search")?.trim() ?? "";
 
     const where: Prisma.ProjectWhereInput = {
       communityId: routeParams.communityId,
     };
 
+    const andConditions: Prisma.ProjectWhereInput[] = [];
+
     if (tagIdList.length) {
-      where.AND = tagIdList.map((tagId) => ({
+      andConditions.push({
         projectTags: {
-          some: { tagId },
+          some: {
+            tagId: { in: tagIdList },
+          },
         },
-      }));
+      });
+    }
+
+    if (searchQuery) {
+      andConditions.push({
+        OR: [
+          { title: { contains: searchQuery, mode: "insensitive" } },
+          { description: { contains: searchQuery, mode: "insensitive" } },
+        ],
+      });
+    }
+
+    if (andConditions.length) {
+      where.AND = andConditions;
     }
 
     // Fetch raw projects with the teamLeader relation

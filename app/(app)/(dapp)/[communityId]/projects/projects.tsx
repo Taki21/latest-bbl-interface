@@ -23,6 +23,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -75,6 +76,8 @@ export default function ProjectsPage() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
 
@@ -90,12 +93,22 @@ export default function ProjectsPage() {
     if (selectedTagIds.length) {
       params.set("tagIds", selectedTagIds.join(","));
     }
+    if (debouncedSearch) {
+      params.set("search", debouncedSearch);
+    }
     const query = params.toString();
 
     fetch(`/api/community/${communityId}/projects${query ? `?${query}` : ""}`)
       .then((r) => r.json())
       .then(setProjects);
-  }, [communityId, selectedTagIds]);
+  }, [communityId, selectedTagIds, debouncedSearch]);
+
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      setDebouncedSearch(searchQuery.trim());
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [searchQuery]);
 
   /* ─── load projects ───────────────────────────── */
   useEffect(() => {
@@ -165,58 +178,66 @@ export default function ProjectsPage() {
     <div className="py-8 space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold">Projects</h1>
-        <div className="flex items-center gap-2">
-          <Popover open={filterOpen} onOpenChange={setFilterOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-2">
-                <Filter className="h-4 w-4" />
-                <span>Filter</span>
-                {selectedTagIds.length > 0 && (
-                  <Badge variant="secondary" className="ml-1">
-                    {selectedTagIds.length}
-                  </Badge>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-60 space-y-2">
-              <p className="text-sm font-medium">Filter by tag</p>
-              <div className="max-h-64 overflow-auto space-y-1">
-                {tags.length ? (
-                  tags.map((tag) => (
-                    <label
-                      key={tag.id}
-                      className="flex items-center space-x-2 rounded px-2 py-1 hover:bg-muted"
-                    >
-                      <Checkbox
-                        checked={selectedTagIds.includes(tag.id)}
-                        onCheckedChange={() => toggleTagFilter(tag.id)}
-                      />
-                      <span>{tag.label}</span>
-                    </label>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground">No tags available.</p>
-                )}
-              </div>
-              <div className="flex justify-between gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  disabled={!selectedTagIds.length}
-                  onClick={() => {
-                    clearFilters();
-                    setFilterOpen(false);
-                  }}
-                >
-                  Clear
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
+            <Input
+              value={searchQuery}
+              placeholder="Search projects"
+              onChange={(event) => setSearchQuery(event.target.value)}
+              className="w-full sm:w-64"
+            />
+            <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <Filter className="h-4 w-4" />
+                  <span>Filter</span>
+                  {selectedTagIds.length > 0 && (
+                    <Badge variant="secondary" className="ml-1">
+                      {selectedTagIds.length}
+                    </Badge>
+                  )}
                 </Button>
-                <Button type="button" size="sm" onClick={() => setFilterOpen(false)}>
-                  Apply
-                </Button>
-              </div>
-            </PopoverContent>
-          </Popover>
+              </PopoverTrigger>
+              <PopoverContent className="w-60 space-y-2">
+                <p className="text-sm font-medium">Filter by tag</p>
+                <div className="max-h-64 overflow-auto space-y-1">
+                  {tags.length ? (
+                    tags.map((tag) => (
+                      <label
+                        key={tag.id}
+                        className="flex items-center space-x-2 rounded px-2 py-1 hover:bg-muted"
+                      >
+                        <Checkbox
+                          checked={selectedTagIds.includes(tag.id)}
+                          onCheckedChange={() => toggleTagFilter(tag.id)}
+                        />
+                        <span>{tag.label}</span>
+                      </label>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No tags available.</p>
+                  )}
+                </div>
+                <div className="flex justify-between gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    disabled={!selectedTagIds.length}
+                    onClick={() => {
+                      clearFilters();
+                      setFilterOpen(false);
+                    }}
+                  >
+                    Clear
+                  </Button>
+                  <Button type="button" size="sm" onClick={() => setFilterOpen(false)}>
+                    Apply
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
 
           {canCreate && (
             <Button onClick={() => setOpen(true)} className="flex items-center gap-2">

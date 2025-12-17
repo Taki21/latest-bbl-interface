@@ -349,6 +349,15 @@ export function TaskDetails({ task, refresh }: TaskDetailsProps) {
     }
   }, [communityId, projectId, taskState.id, taskState.name]);
 
+  const memberLookup = useMemo(() => {
+    const map = new Map<string, MemberOption>();
+    communityMembers.forEach((member) => {
+      map.set(member.user.id, member);
+      map.set(member.user.address.toLowerCase(), member);
+    });
+    return map;
+  }, [communityMembers]);
+
   const creatorName = taskState.creator.name ?? taskState.creator.address;
   const creatorInitials = creatorName
     .split(" ")
@@ -359,15 +368,6 @@ export function TaskDetails({ task, refresh }: TaskDetailsProps) {
     memberLookup.get(taskState.creator.id) ||
     memberLookup.get(taskState.creator.address.toLowerCase()) ||
     null;
-
-  const memberLookup = useMemo(() => {
-    const map = new Map<string, MemberOption>();
-    communityMembers.forEach((member) => {
-      map.set(member.user.id, member);
-      map.set(member.user.address.toLowerCase(), member);
-    });
-    return map;
-  }, [communityMembers]);
 
   const assignedMembersDetailed = useMemo(() => {
     if (assignedMemberIds.length) {

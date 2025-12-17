@@ -27,6 +27,43 @@ import {
 import { Plus }        from "lucide-react";
 import { useAccount }  from "wagmi";
 
+const toDateInputValue = (value: string | Date | null | undefined) => {
+  if (!value) return "";
+  try {
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toISOString().slice(0, 10);
+  } catch {
+    return "";
+  }
+};
+
+const toStringValue = (value: string | number | bigint | null | undefined) => {
+  if (value === null || value === undefined) return "";
+  try {
+    return `${value}`;
+  } catch {
+    return "";
+  }
+};
+
+const normalizeStatus = (
+  value: string | null | undefined
+): "active" | "completed" | "on_hold" => {
+  switch ((value ?? "").toLowerCase()) {
+    case "completed":
+    case "complete":
+    case "done":
+      return "completed";
+    case "on_hold":
+    case "hold":
+    case "paused":
+      return "on_hold";
+    default:
+      return "active";
+  }
+};
+
 interface Member {
   id: string;
   role: string;
@@ -43,16 +80,22 @@ interface Tag {
   slug: string;
 }
 
+interface ProjectMemberRef {
+  id: string | null;
+  user?: { id?: string | null } | null;
+}
+
 interface ProjectPayload {
   id: string;
-  title:       string;
-  description: string;
-  deadline:    string;
-  status:      "active" | "completed" | "on_hold";
-  balance:     string;
-  teamLeaderId: string;
-  members:     { id: string }[];
-  tags?:       Tag[];
+  title: string | null;
+  description: string | null;
+  deadline: string | Date | null;
+  status: string | null;
+  balance: string | number | bigint | null;
+  teamLeaderId: string | null;
+  teamLeader?: ProjectMemberRef | null;
+  members: ProjectMemberRef[];
+  tags?: Tag[];
 }
 
 interface Props {
@@ -184,20 +227,39 @@ export default function ProjectEditForm({
           : [];
 
         // Populate form defaults
-        setTitle(proj.title);
-        setDescription(proj.description);
-        setDeadline(proj.deadline.split("T")[0]);
-        setStatus(proj.status);
-        setBudget(proj.balance.toString());
-        setTeamLeaderId(proj.teamLeaderId);
+        setTitle(proj.title ?? "");
+        setDescription(proj.description ?? "");
+        setDeadline(toDateInputValue(proj.deadline));
+        setStatus(normalizeStatus(proj.status));
+        setBudget(toStringValue(proj.balance));
 
-        const userIds = proj.members.map((m) => m.id);
-        setMemberIds(
-          mems
-            .filter((m) => userIds.includes(m.user.id))
-            .map((m) => m.id)
-        );
+        const projectMemberIdSet = new Set<string>();
+        const projectMemberUserIdSet = new Set<string>();
+        if (Array.isArray(proj.members)) {
+          proj.members.forEach((member) => {
+            if (!member) return;
+            if (member.id) projectMemberIdSet.add(member.id);
+            const userId = member.user?.id;
+            if (userId) projectMemberUserIdSet.add(userId);
+          });
+        }
+
+        const resolvedMemberIds = mems
+          .filter(
+            (member) =>
+              projectMemberIdSet.has(member.id) ||
+              projectMemberUserIdSet.has(member.user.id)
+          )
+          .map((member) => member.id);
+        setMemberIds(resolvedMemberIds);
         setMembers(mems);
+
+        const matchedLeader =
+          mems.find((member) => member.id === proj.teamLeaderId) ??
+          (proj.teamLeader?.user?.id
+            ? mems.find((member) => member.user.id === proj.teamLeader?.user?.id)
+            : undefined);
+        setTeamLeaderId(matchedLeader?.id ?? proj.teamLeaderId ?? "");
 
         const tagList = Array.isArray(proj.tags) ? proj.tags : [];
         setSelectedTagIds(tagList.map((tag) => tag.id));
