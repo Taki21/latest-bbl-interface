@@ -11,6 +11,48 @@
     animation: bounce 2s infinite;
   }
 }
+.animate-fade-in-up {
+  animation: fade-in-up 2s ease-in-out;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-background-pan {
+  background-size: 200% 200%;
+  animation: background-pan 15s ease-in-out infinite;
+}
+
+@keyframes background-pan {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+.animate-on-scroll {
+  opacity: 0; /* 처음엔 투명하게 */
+  transform: translateY(20px); /* 살짝 아래로 이동 */
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out; /* 부드러운 전환 효과 */
+}
+
+/* 화면에 보일 때 적용될 스타일 */
+.animate-on-scroll.is-visible {
+  opacity: 1; /* 완전히 보이게 */
+  transform: translateY(0); /* 원래 위치로 */
+}
 
 @layer base {
   :root {
@@ -90,5 +132,9 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  html {
+    /* 부드러운 스크롤 효과 (선택 사항) */
+    @apply scroll-smooth;
   }
 }

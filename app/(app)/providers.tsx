@@ -6,7 +6,10 @@ import {base} from 'viem/chains';
 
 import type {PrivyClientConfig} from '@privy-io/react-auth';
 import {PrivyProvider} from '@privy-io/react-auth';
-import {WagmiProvider, createConfig} from '@privy-io/wagmi';
+import {WagmiProvider} from '@privy-io/wagmi';
+
+// 1. 'wagmi'에서 createConfig를 import합니다.
+import { createConfig } from 'wagmi'; 
 
 const queryClient = new QueryClient();
 
@@ -21,7 +24,6 @@ const privyConfig: PrivyClientConfig = {
   embeddedWallets: {
     createOnLogin: 'users-without-wallets',
   },
-  // Restrict login options to Google and Email only
   loginMethods: ['google', 'email'],
   appearance: {
     showWalletLoginFirst: false,
@@ -38,7 +40,7 @@ export function Providers({children}: {children: React.ReactNode}) {
       config={privyConfig}
     >
       <QueryClientProvider client={queryClient}>
-        <WagmiProvider config={wagmiConfig} reconnectOnMount>
+        <WagmiProvider config={wagmiConfig}>
           {children}
         </WagmiProvider>
       </QueryClientProvider>
