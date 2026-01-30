@@ -290,7 +290,7 @@ export default function Onboarding() {
         </section>
         <section className="mx-auto flex flex-col items-center gap-4">
           <Button size="lg" onClick={() => setShowGetStarted(true)}>
-            Join a Community
+            Create or Join a Community
           </Button>
         </section>
       </main>

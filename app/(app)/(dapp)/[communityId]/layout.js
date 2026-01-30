@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { Fragment, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter, useParams, usePathname } from "next/navigation";
 import { useAccount } from "wagmi";
 import { usePrivy } from "@privy-io/react-auth";
 import { AppSidebar } from "@/components/app-sidebar";
@@ -33,9 +34,50 @@ export default function DappLayout({ children }) {
   const { ready, authenticated } = usePrivy();
   const router = useRouter();
   const params = useParams();
+  const pathname = usePathname();
   const communityId = (params?.communityId) ?? "";
   const [profileIncomplete, setProfileIncomplete] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
+
+  const breadcrumbs = useMemo(() => {
+    const labelMap = {
+      dashboard: "Dashboard",
+      projects: "Projects",
+      members: "Members",
+      settings: "Settings",
+      treasury: "Treasury",
+      admin: "Admin",
+    };
+
+    const formatSegment = (segment) => {
+      const decoded = decodeURIComponent(segment);
+      const pretty = decoded.replace(/[-_]/g, " ");
+      return pretty.replace(/\b\w/g, (char) => char.toUpperCase());
+    };
+
+    const segments = pathname ? pathname.split("/").filter(Boolean) : [];
+    const startIndex =
+      communityId && segments[0] === communityId ? 1 : 0;
+    const routeSegments = segments.slice(startIndex);
+    const items = [];
+
+    let href = communityId ? `/${communityId}` : "";
+    routeSegments.forEach((segment, index) => {
+      href += `/${segment}`;
+      const prevSegment = routeSegments[index - 1];
+      const label = labelMap[segment]
+        ? labelMap[segment]
+        : formatSegment(segment);
+      const isLast = index === routeSegments.length - 1;
+      items.push({
+        label: prevSegment === "projects" && segment.length > 20 ? "Project" : label,
+        href: isLast ? null : href,
+        isCurrent: isLast,
+      });
+    });
+
+    return items;
+  }, [communityId, pathname]);
 
   useEffect(() => {
     if (!communityId || !address) return;
@@ -86,13 +128,26 @@ export default function DappLayout({ children }) {
             <Separator orientation="vertical" className="mr-2 h-4" />
             <Breadcrumb>
               <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">Platform</BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Dashboard</BreadcrumbPage>
-                </BreadcrumbItem>
+                {breadcrumbs.map((crumb, index) => {
+                  const isLast = index === breadcrumbs.length - 1;
+                  const hideOnMobile = false;
+                  return (
+                    <Fragment key={`${crumb.label}-${index}`}>
+                      <BreadcrumbItem className={hideOnMobile ? "hidden md:block" : undefined}>
+                        {crumb.isCurrent || !crumb.href ? (
+                          <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
+                        ) : (
+                          <BreadcrumbLink asChild>
+                            <Link href={crumb.href}>{crumb.label}</Link>
+                          </BreadcrumbLink>
+                        )}
+                      </BreadcrumbItem>
+                      {!isLast && (
+                        <BreadcrumbSeparator className={hideOnMobile ? "hidden md:block" : undefined} />
+                      )}
+                    </Fragment>
+                  );
+                })}
               </BreadcrumbList>
             </Breadcrumb>
           </div>
