@@ -35,10 +35,7 @@ export async function POST(
       },
       select: { role: true },
     });
-    if (
-      !caller ||
-      (caller.role !== MemberRole.Owner && caller.role !== MemberRole.Supervisor)
-    ) {
+    if (!caller || caller.role !== MemberRole.Owner) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 

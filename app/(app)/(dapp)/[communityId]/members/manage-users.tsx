@@ -158,8 +158,8 @@ export default function MembersPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
-              <TableHead>Wallet</TableHead>
-              <TableHead>Email</TableHead>
+              {isAdmin && <TableHead>Wallet</TableHead>}
+              {isAdmin && <TableHead>Email</TableHead>}
               <TableHead>Role</TableHead>
               <TableHead className="text-right">Balance</TableHead>
               <TableHead className="text-right">Allocated</TableHead>
@@ -208,12 +208,16 @@ export default function MembersPage() {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="font-mono text-xs truncate max-w-[140px]">
-                    {m.user.address}
-                  </TableCell>
-                  <TableCell>{m.user.email ?? "—"}</TableCell>
+                  {isAdmin && (
+                    <TableCell className="font-mono text-xs truncate max-w-[140px]">
+                      {m.user.address}
+                    </TableCell>
+                  )}
+                  {isAdmin && (
+                    <TableCell>{m.user.email ?? "—"}</TableCell>
+                  )}
                   <TableCell>
-                    {isAdmin && !isSelf ? (
+                    {myRole === "Owner" && !isSelf ? (
                       <Select
                         value={m.role}
                         onValueChange={(v) => changeRole(m.id, v)}
