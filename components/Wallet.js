@@ -20,6 +20,7 @@ import {
 import { useEffect, useState } from "react"
 import { useDisconnect, useWalletClient } from "wagmi"
 import { usePrivy } from "@privy-io/react-auth"
+import { getPrivyDisplayUser } from "@/lib/privy-profile"
 
 export default function WalletButton() {
 
@@ -34,16 +35,12 @@ export default function WalletButton() {
     const [user, setUser] = useState({
         name: "shadcn",
         email: "m@example.com",
-        avatar: "/avatars/shadcn.jpg",
+        avatar: "/logo.jpg",
     });
 
     useEffect(() => {
         if (privyUser) {
-            setUser({
-                name: privyUser.name ?? privyUser?.google?.name ?? "User",
-                email: privyUser.email ?? privyUser?.google?.email ?? "",
-                avatar: privyUser.profilePictureUrl ?? privyUser?.google?.picture ?? "/avatars/shadcn.jpg",
-            });
+            setUser(getPrivyDisplayUser(privyUser));
         }
     }, [privyUser, walletClient]);
     const dashboardHref = communityId ? `/${communityId}/dashboard` : "/dashboard";

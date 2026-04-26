@@ -17,6 +17,7 @@ import { NavSecondary } from "@/components/nav-secondary";
 import { NavUser } from "@/components/nav-user";
 import { TeamSwitcher } from "./team-switcher";
 import { Coins } from "lucide-react";
+import { getPrivyDisplayUser } from "@/lib/privy-profile";
 
 interface NavItem {
   title: string;
@@ -48,11 +49,7 @@ export function AppSidebar({ communityId, ...props }: AppSidebarProps) {
 
   useEffect(() => {
     if (privyUser) {
-      setUser({
-        name: privyUser.name ?? privyUser?.google?.name ?? "User",
-        email: privyUser.email ?? privyUser?.google?.email ?? "",
-        avatar: privyUser.profilePictureUrl ?? privyUser?.google?.picture ?? "/avatars/shadcn.jpg",
-      });
+      setUser(getPrivyDisplayUser(privyUser));
     }
   }, [privyUser, walletClient]);
 
