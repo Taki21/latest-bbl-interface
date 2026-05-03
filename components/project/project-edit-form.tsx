@@ -147,6 +147,7 @@ export default function ProjectEditForm({
   const [createTagOpen, setCreateTagOpen] = useState(false);
   const [newTagLabel, setNewTagLabel] = useState("");
   const [tagSubmitting, setTagSubmitting] = useState(false);
+  const [memberSearch, setMemberSearch] = useState("");
 
   const actorAddress = callerAddress || address || "";
 
@@ -537,7 +538,7 @@ export default function ProjectEditForm({
         {/* Members Multi-Select */}
         <div className="space-y-1">
           <label className="block text-sm font-medium">Members</label>
-          <Popover>
+          <Popover onOpenChange={(open) => { if (!open) setMemberSearch(""); }}>
             <PopoverTrigger asChild>
               <Button variant="outline" className="w-full justify-between">
                 {memberIds.length
@@ -545,19 +546,48 @@ export default function ProjectEditForm({
                   : "Select members"}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="max-h-60 overflow-auto p-2">
-              {members.map((m) => (
-                <label
-                  key={m.id}
-                  className="flex items-center space-x-2 py-1 hover:bg-muted"
-                >
-                  <Checkbox
-                    checked={memberIds.includes(m.id)}
-                    onCheckedChange={() => toggleMember(m.id)}
-                  />
-                  <span>{m.name || m.user.name || m.user.address}</span>
-                </label>
-              ))}
+            <PopoverContent className="p-2 w-64">
+              <Input
+                placeholder="Search members…"
+                value={memberSearch}
+                onChange={(e) => setMemberSearch(e.target.value)}
+                className="mb-2 h-8 text-sm"
+              />
+              <div className="max-h-52 overflow-auto">
+                {members
+                  .filter((m) => {
+                    const q = memberSearch.toLowerCase();
+                    return (
+                      !q ||
+                      m.name?.toLowerCase().includes(q) ||
+                      m.user.name?.toLowerCase().includes(q) ||
+                      m.user.address?.toLowerCase().includes(q)
+                    );
+                  })
+                  .map((m) => (
+                    <label
+                      key={m.id}
+                      className="flex items-center space-x-2 py-1 px-1 rounded hover:bg-muted cursor-pointer"
+                    >
+                      <Checkbox
+                        checked={memberIds.includes(m.id)}
+                        onCheckedChange={() => toggleMember(m.id)}
+                      />
+                      <span className="text-sm truncate">{m.name || m.user.name || m.user.address}</span>
+                    </label>
+                  ))}
+                {members.filter((m) => {
+                  const q = memberSearch.toLowerCase();
+                  return (
+                    !q ||
+                    m.name?.toLowerCase().includes(q) ||
+                    m.user.name?.toLowerCase().includes(q) ||
+                    m.user.address?.toLowerCase().includes(q)
+                  );
+                }).length === 0 && (
+                  <p className="text-xs text-muted-foreground text-center py-2">No members found</p>
+                )}
+              </div>
             </PopoverContent>
           </Popover>
         </div>

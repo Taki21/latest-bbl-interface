@@ -4,7 +4,7 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useParams, usePathname } from "next/navigation";
 import { useAccount } from "wagmi";
-import { usePrivy } from "@privy-io/react-auth";
+import { usePrivy, useLinkAccount } from "@privy-io/react-auth";
 import { AppSidebar } from "@/components/app-sidebar";
 import {
   Breadcrumb,
@@ -31,13 +31,15 @@ import { Button } from "@/components/ui/button";
 
 export default function DappLayout({ children }) {
   const { isConnected, address } = useAccount();
-  const { ready, authenticated } = usePrivy();
+  const { ready, authenticated, user } = usePrivy();
+  const { linkEmail } = useLinkAccount();
   const router = useRouter();
   const params = useParams();
   const pathname = usePathname();
   const communityId = (params?.communityId) ?? "";
   const [profileIncomplete, setProfileIncomplete] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [eduBannerDismissed, setEduBannerDismissed] = useState(false);
 
   const breadcrumbs = useMemo(() => {
     const labelMap = {
@@ -118,6 +120,15 @@ export default function DappLayout({ children }) {
   const showBanner = profileIncomplete && !bannerDismissed;
   const settingsHref = communityId ? `/${communityId}/settings` : "/";
 
+  const linkedEmails = (user?.linkedAccounts ?? [])
+    .filter((a) => a.type === "email")
+    .map((a) => a.address?.toLowerCase() ?? "");
+  const googleEmail = user?.google?.email?.toLowerCase() ?? "";
+  const allEmails = [...linkedEmails, googleEmail].filter(Boolean);
+  const hasEduEmail = allEmails.some((e) => e.endsWith(".edu"));
+  const hasPersonalEmail = allEmails.some((e) => !e.endsWith(".edu"));
+  const showEduBanner = hasEduEmail && !hasPersonalEmail && !eduBannerDismissed;
+
   return (
     <SidebarProvider>
       <AppSidebar communityId={communityId} />
@@ -157,6 +168,34 @@ export default function DappLayout({ children }) {
             <WalletButton />
           </div>
         </header>
+        {showEduBanner && (
+          <div className="px-4">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-100">
+              <div className="flex-1">
+                <p className="font-medium">Link a personal email to keep access after graduation</p>
+                <p className="text-xs text-blue-900/70 dark:text-blue-100/70">
+                  You&apos;re signed in with a .edu email. Add a personal email so you don&apos;t lose access when you graduate.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => linkEmail()}
+                >
+                  Link personal email
+                </Button>
+                <button
+                  type="button"
+                  className="text-xs text-blue-900/50 hover:text-blue-900 dark:text-blue-100/50 dark:hover:text-blue-100"
+                  onClick={() => setEduBannerDismissed(true)}
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         {showBanner && (
           <div className="px-4">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">

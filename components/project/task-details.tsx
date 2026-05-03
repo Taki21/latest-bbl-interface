@@ -174,6 +174,7 @@ export function TaskDetails({ task, refresh }: TaskDetailsProps) {
   const [communityMembers, setCommunityMembers] = useState<MemberOption[]>([]);
   const [assignedMemberIds, setAssignedMemberIds] = useState<string[]>([]);
   const [metaLoading, setMetaLoading] = useState(false);
+  const [addMemberSearch, setAddMemberSearch] = useState("");
 
   const [copied, setCopied] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
@@ -994,33 +995,50 @@ export function TaskDetails({ task, refresh }: TaskDetailsProps) {
               )}
 
               {canEdit && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+                <Popover onOpenChange={(open) => { if (!open) setAddMemberSearch(""); }}>
+                  <PopoverTrigger asChild>
                     <Button
                       variant="outline"
                       size="icon"
-                      disabled={!availableMembers.length || metaLoading}
+                      disabled={metaLoading}
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-48">
-                    {availableMembers.length ? (
-                      availableMembers.map((member) => (
-                        <DropdownMenuItem
-                          key={member.id}
-                          onClick={() => handleAddMember(member.id)}
-                        >
-                          {member.user.name || member.user.address}
-                        </DropdownMenuItem>
-                      ))
-                    ) : (
-                      <DropdownMenuItem disabled>
-                        Everyone is assigned
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="p-2 w-56">
+                    <Input
+                      placeholder="Search members…"
+                      value={addMemberSearch}
+                      onChange={(e) => setAddMemberSearch(e.target.value)}
+                      className="mb-2 h-8 text-sm"
+                    />
+                    <div className="flex flex-col max-h-48 overflow-auto">
+                      {availableMembers
+                        .filter((m) => {
+                          const q = addMemberSearch.toLowerCase();
+                          return !q || m.user.name?.toLowerCase().includes(q) || m.user.address?.toLowerCase().includes(q);
+                        })
+                        .map((member) => (
+                          <button
+                            key={member.id}
+                            type="button"
+                            className="w-full text-left rounded px-2 py-1.5 text-sm hover:bg-muted"
+                            onClick={() => handleAddMember(member.id)}
+                          >
+                            {member.user.name || member.user.address}
+                          </button>
+                        ))}
+                      {availableMembers.filter((m) => {
+                        const q = addMemberSearch.toLowerCase();
+                        return !q || m.user.name?.toLowerCase().includes(q) || m.user.address?.toLowerCase().includes(q);
+                      }).length === 0 && (
+                        <p className="text-xs text-muted-foreground text-center py-2">
+                          {availableMembers.length === 0 ? "Everyone is assigned" : "No members found"}
+                        </p>
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
               )}
             </div>
           </div>
