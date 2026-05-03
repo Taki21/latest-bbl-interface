@@ -1,17 +1,6 @@
 "use client";
 
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card";
-import {
-  Avatar,
-  AvatarImage,
-  AvatarFallback,
-} from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { MemberProfileHover } from "@/components/member/member-profile-hover";
 
@@ -50,87 +39,53 @@ interface ProjectDetailsProps {
   };
 }
 
+const statusVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+  active:    "default",
+  completed: "secondary",
+  on_hold:   "outline",
+};
+
 export function ProjectDetails({ project }: ProjectDetailsProps) {
   const leader = project.teamLeader;
   const name = leader?.name ?? leader?.user?.name ?? leader?.user?.address ?? "—";
-  const initials = name
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase();
+  const initials = name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{project.title}</CardTitle>
-        {project.description && (
-          <CardDescription>{project.description}</CardDescription>
-        )}
-      </CardHeader>
-      <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Team Leader */}
-        <div className="flex items-center space-x-3">
-          <MemberProfileHover member={leader}>
-            <Avatar className="h-12 w-12">
-              <AvatarImage src={undefined} alt={name} />
-              <AvatarFallback>{initials}</AvatarFallback>
-            </Avatar>
-          </MemberProfileHover>
-          <div>
-            <p className="text-sm text-muted-foreground">Team Leader</p>
-            <p className="font-medium">{name}</p>
-          </div>
+    <div className="space-y-2 pb-4 border-b">
+      {/* Title row */}
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h1 className="text-lg font-bold leading-tight truncate">{project.title}</h1>
+          {project.description && (
+            <p className="text-sm text-muted-foreground mt-0.5 line-clamp-1">{project.description}</p>
+          )}
         </div>
-
-        {/* Members Count */}
-        <div>
-          <p className="text-sm text-muted-foreground">Members</p>
-          <p className="font-medium">{project.members.length}</p>
-        </div>
-
-        {/* Tasks Count */}
-        <div>
-          <p className="text-sm text-muted-foreground">Tasks</p>
-          <p className="font-medium">{project.tasks.length}</p>
-        </div>
-
-        {/* Budget */}
-        <div>
-          <p className="text-sm text-muted-foreground">Budget</p>
-          <p className="font-medium">
-            {project.balance.toString()} TOKEN
-          </p>
-        </div>
-
-        {/* Deadline */}
-        <div>
-          <p className="text-sm text-muted-foreground">Deadline</p>
-          <p className="font-medium">
-            {new Date(project.deadline).toLocaleDateString()}
-          </p>
-        </div>
-
-        {/* Status */}
-        <div>
-          <p className="text-sm text-muted-foreground">Status</p>
-          <p className="font-medium capitalize">
+        <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+          <Badge variant={statusVariant[project.status] ?? "default"} className="capitalize">
             {project.status.replace("_", " ")}
-          </p>
+          </Badge>
+          {project.tags?.map((tag) => (
+            <Badge key={tag.id} variant="secondary">{tag.label}</Badge>
+          ))}
         </div>
+      </div>
 
-        {project.tags?.length ? (
-          <div className="md:col-span-3">
-            <p className="text-sm text-muted-foreground">Tags</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {project.tags.map((tag) => (
-                <Badge key={tag.id} variant="secondary">
-                  {tag.label}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        ) : null}
-      </CardContent>
-    </Card>
+      {/* Meta row */}
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-muted-foreground">
+        <MemberProfileHover member={leader}>
+          <span className="flex items-center gap-1.5 cursor-default">
+            <Avatar className="h-5 w-5">
+              <AvatarImage src={undefined} alt={name} />
+              <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
+            </Avatar>
+            <span className="text-foreground font-medium">{name}</span>
+          </span>
+        </MemberProfileHover>
+        <span>{project.members.length} members</span>
+        <span>{project.tasks.length} tasks</span>
+        <span>Due {new Date(project.deadline).toLocaleDateString()}</span>
+        <span>{project.balance.toString()} TOKEN</span>
+      </div>
+    </div>
   );
 }
