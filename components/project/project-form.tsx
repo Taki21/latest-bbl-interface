@@ -6,6 +6,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter }           from "next/navigation";
 import { useAccount }          from "wagmi";
 import { Plus }                from "lucide-react";
+import { cn }                  from "@/lib/utils";
 import { Input }               from "@/components/ui/input";
 import { Textarea }            from "@/components/ui/textarea";
 import { Button }              from "@/components/ui/button";
@@ -78,6 +79,10 @@ export default function ProjectForm({
   const [createTagOpen, setCreateTagOpen] = useState(false);
   const [newTagLabel, setNewTagLabel] = useState("");
   const [tagSubmitting, setTagSubmitting] = useState(false);
+  const [teamLeaderOpen, setTeamLeaderOpen] = useState(false);
+  const [teamLeaderSearch, setTeamLeaderSearch] = useState("");
+  const [memberPopoverOpen, setMemberPopoverOpen] = useState(false);
+  const [memberSearch, setMemberSearch] = useState("");
 
   const actorAddress = creatorAddress || address || "";
 
@@ -280,47 +285,77 @@ export default function ProjectForm({
         {/* Team Leader */}
         <div>
           <label className="block text-sm font-medium">Team Leader</label>
-          <select
-            className="w-full rounded border p-2"
-            value={teamLeaderId}
-            onChange={(e) => setTeamLeaderId(e.target.value)}
-            required
-          >
-            <option value="" disabled>
-              Select a leader…
-            </option>
-            {members.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name || m.user?.name || m.user?.address}
-              </option>
-            ))}
-          </select>
+          <Popover open={teamLeaderOpen} onOpenChange={(o) => { setTeamLeaderOpen(o); if (!o) setTeamLeaderSearch(""); }}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-full justify-between font-normal">
+                <span className="truncate">
+                  {teamLeaderId
+                    ? (members.find((m) => m.id === teamLeaderId) ?? members[0]) &&
+                      (members.find((m) => m.id === teamLeaderId)?.name ||
+                       members.find((m) => m.id === teamLeaderId)?.user?.name ||
+                       members.find((m) => m.id === teamLeaderId)?.user?.address ||
+                       "Select a leader…")
+                    : "Select a leader…"}
+                </span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="p-2 w-64">
+              <Input
+                placeholder="Search members…"
+                value={teamLeaderSearch}
+                onChange={(e) => setTeamLeaderSearch(e.target.value)}
+                className="mb-2 h-8 text-sm"
+              />
+              <div className="max-h-52 overflow-auto">
+                {members
+                  .filter((m) => { const q = teamLeaderSearch.toLowerCase(); return !q || m.name?.toLowerCase().includes(q) || m.user?.name?.toLowerCase().includes(q) || m.user?.address?.toLowerCase().includes(q); })
+                  .map((m) => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => { setTeamLeaderId(m.id); setTeamLeaderOpen(false); setTeamLeaderSearch(""); }}
+                      className={cn("w-full text-left rounded px-2 py-1.5 text-sm hover:bg-muted", teamLeaderId === m.id && "bg-muted font-medium")}
+                    >
+                      {m.name || m.user?.name || m.user?.address}
+                    </button>
+                  ))}
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
 
         {/* Members Multi-Select */}
         <div>
           <label className="block text-sm font-medium">Members</label>
-          <Popover>
+          <Popover open={memberPopoverOpen} onOpenChange={(o) => { setMemberPopoverOpen(o); if (!o) setMemberSearch(""); }}>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="w-full">
-                {memberIds.length
-                  ? `${memberIds.length} selected`
-                  : "Select members"}
+              <Button variant="outline" className="w-full justify-between">
+                {memberIds.length ? `${memberIds.length} selected` : "Select members"}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="max-h-60 overflow-auto p-2">
-              {members.map((m) => (
-                <label
-                  key={m.id}
-                  className="flex items-center space-x-2 py-1"
-                >
-                  <Checkbox
-                    checked={memberIds.includes(m.id)}
-                    onCheckedChange={() => toggleMember(m.id)}
-                  />
-                  <span>{m.name || m.user?.name || m.user?.address}</span>
-                </label>
-              ))}
+            <PopoverContent className="p-2 w-64">
+              <Input
+                placeholder="Search members…"
+                value={memberSearch}
+                onChange={(e) => setMemberSearch(e.target.value)}
+                className="mb-2 h-8 text-sm"
+              />
+              <div className="max-h-48 overflow-auto">
+                {members
+                  .filter((m) => { const q = memberSearch.toLowerCase(); return !q || m.name?.toLowerCase().includes(q) || m.user?.name?.toLowerCase().includes(q) || m.user?.address?.toLowerCase().includes(q); })
+                  .map((m) => (
+                    <label key={m.id} className="flex items-center space-x-2 rounded px-2 py-1 hover:bg-muted cursor-pointer">
+                      <Checkbox checked={memberIds.includes(m.id)} onCheckedChange={() => toggleMember(m.id)} />
+                      <span className="text-sm truncate">{m.name || m.user?.name || m.user?.address}</span>
+                    </label>
+                  ))}
+                {members.filter((m) => { const q = memberSearch.toLowerCase(); return !q || m.name?.toLowerCase().includes(q) || m.user?.name?.toLowerCase().includes(q) || m.user?.address?.toLowerCase().includes(q); }).length === 0 && (
+                  <p className="text-xs text-muted-foreground text-center py-2">No members found</p>
+                )}
+              </div>
+              <Button type="button" size="sm" className="mt-2 w-full" onClick={() => setMemberPopoverOpen(false)}>
+                Apply
+              </Button>
             </PopoverContent>
           </Popover>
         </div>

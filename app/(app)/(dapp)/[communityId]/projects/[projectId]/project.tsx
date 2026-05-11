@@ -81,6 +81,7 @@ export default function ProjectPage() {
   const [project, setProject]       = useState<Project | null>(null);
   const [selectedTask, setSelected] = useState<Task | null>(null);
   const [role, setRole]             = useState<string | null>(null);
+  const [myMemberId, setMyMemberId] = useState<string | null>(null);
   const [error, setError]           = useState<string | null>(null);
   const [open, setOpen]             = useState(false);
   const [view, setView]             = useState<View>("kanban");
@@ -96,8 +97,8 @@ export default function ProjectPage() {
       .then((data: Project) => {
         setProject(data);
         setSelected((prev) => {
-          if (!prev) return data.tasks[0] ?? null;
-          return data.tasks.find((t) => t.id === prev.id) ?? data.tasks[0] ?? null;
+          if (!prev) return null;
+          return data.tasks.find((t) => t.id === prev.id) ?? null;
         });
       })
       .catch((err) => setError(err.message));
@@ -118,7 +119,7 @@ export default function ProjectPage() {
         const me = list.find(
           (m: any) => m.user.address.toLowerCase() === address.toLowerCase()
         );
-        if (me) setRole(me.role);
+        if (me) { setRole(me.role); setMyMemberId(me.id); }
       });
   }, [communityId, address]);
 
@@ -146,11 +147,11 @@ export default function ProjectPage() {
   if (error) return <p className="text-destructive p-4">{error}</p>;
   if (!project) return <p className="p-4">Loading...</p>;
 
-  const teamLeaderAddress = project.teamLeader?.user?.address?.toLowerCase();
+  // Match exactly what the API checks: me.id === project.teamLeaderId
   const canCreateTask =
     role === "Owner" ||
     role === "Supervisor" ||
-    (teamLeaderAddress && teamLeaderAddress === address?.toLowerCase());
+    (myMemberId !== null && project.teamLeader?.id === myMemberId);
 
   return (
     <div className="py-4 space-y-4">
@@ -244,6 +245,7 @@ export default function ProjectPage() {
             communityId={communityId}
             projectId={projectId}
             creatorAddress={address ?? ""}
+            projectMembers={project.members}
             onSuccess={() => {
               setOpen(false);
               refresh();

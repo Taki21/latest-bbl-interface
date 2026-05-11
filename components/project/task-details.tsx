@@ -168,6 +168,8 @@ export function TaskDetails({ task, refresh }: TaskDetailsProps) {
   const [meId, setMeId] = useState<string | null>(null);
   const [projCreatorId, setProjCreatorId] = useState<string | null>(null);
   const [projTeamLeaderId, setProjTeamLeaderId] = useState<string | null>(null);
+  const [roleLoaded, setRoleLoaded] = useState(false);
+  const [projMetaLoaded, setProjMetaLoaded] = useState(false);
 
   const [taskState, setTaskState] = useState(task);
   const [projectBalance, setProjectBalance] = useState<bigint>(0n);
@@ -255,8 +257,9 @@ export function TaskDetails({ task, refresh }: TaskDetailsProps) {
           setRole(me.role);
           setMeId(me.id);
         }
+        setRoleLoaded(true);
       })
-      .catch((err) => console.error("Failed to load member role", err));
+      .catch((err) => { console.error("Failed to load member role", err); setRoleLoaded(true); });
   }, [communityId, currentAddress]);
 
   // fetch project metadata (creatorId & teamLeaderId)
@@ -267,8 +270,9 @@ export function TaskDetails({ task, refresh }: TaskDetailsProps) {
       .then((p: any) => {
         setProjCreatorId(p.creatorId);
         setProjTeamLeaderId(p.teamLeaderId);
+        setProjMetaLoaded(true);
       })
-      .catch((err) => console.error("Failed to load project metadata", err));
+      .catch((err) => { console.error("Failed to load project metadata", err); setProjMetaLoaded(true); });
   }, [communityId, projectId]);
 
   // fetch project balance + community members for assignments
@@ -327,7 +331,10 @@ export function TaskDetails({ task, refresh }: TaskDetailsProps) {
     };
   }, [communityId, projectId, taskState.id]);
 
+  const permissionsReady = roleLoaded && projMetaLoaded;
+
   const canEdit =
+    permissionsReady &&
     (role === "Owner" ||
       role === "Supervisor" ||
       meId === projCreatorId ||
@@ -692,11 +699,12 @@ export function TaskDetails({ task, refresh }: TaskDetailsProps) {
 
       <CardContent className="px-0 space-y-6">
         <div className="space-y-3">
-          {metaLoading ? (
+          {metaLoading || !permissionsReady ? (
             <div className="px-6 text-sm text-muted-foreground">Loading editor…</div>
           ) : (
             <>
               <Editor
+                key={taskState.id}
                 initialContent={initialBlocks}
                 editable={canEdit}
                 onChange={handleEditorChange}

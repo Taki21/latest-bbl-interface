@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { useAccount } from "wagmi";
+import { usePrivy, useLinkAccount } from "@privy-io/react-auth";
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -45,6 +46,8 @@ interface GenericTag {
 export default function SettingsPage() {
   const { communityId } = useParams<{ communityId: string }>();
   const { address } = useAccount();
+  const { user } = usePrivy();
+  const { linkEmail, linkGoogle } = useLinkAccount();
 
   const [member, setMember] = useState<MemberRecord>({
     id: "",
@@ -262,6 +265,79 @@ export default function SettingsPage() {
               {savingName ? "Saving…" : "Save"}
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      {/* Linked Accounts */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Linked Accounts</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {(() => {
+            const linked = user?.linkedAccounts ?? [];
+            const emails = linked.filter((a: any) => a.type === "email").map((a: any) => a.address as string);
+            const google = linked.find((a: any) => a.type === "google_oauth");
+            const googleEmail = (google as any)?.email as string | undefined;
+            const hasGoogle = Boolean(google);
+            return (
+              <>
+                {/* Google */}
+                <div className="flex items-center justify-between rounded-lg border px-4 py-3">
+                  <div>
+                    <p className="text-sm font-medium">Google</p>
+                    {hasGoogle && googleEmail && (
+                      <p className="text-xs text-muted-foreground">{googleEmail}</p>
+                    )}
+                  </div>
+                  {hasGoogle ? (
+                    <span className="text-xs text-green-600 font-medium">Linked</span>
+                  ) : (
+                    <Button size="sm" variant="outline" onClick={() => linkGoogle()}>
+                      Link Google
+                    </Button>
+                  )}
+                </div>
+
+                {/* Emails */}
+                {emails.map((email: string) => (
+                  <div key={email} className="flex items-center justify-between rounded-lg border px-4 py-3">
+                    <div>
+                      <p className="text-sm font-medium">Email</p>
+                      <p className="text-xs text-muted-foreground">{email}</p>
+                    </div>
+                    <span className="text-xs text-green-600 font-medium">Linked</span>
+                  </div>
+                ))}
+
+                {/* Add personal email nudge if only .edu emails are linked */}
+                {emails.length > 0 && emails.every((e: string) => e.endsWith(".edu")) && (
+                  <div className="flex items-center justify-between rounded-lg border px-4 py-3">
+                    <div>
+                      <p className="text-sm font-medium">Personal email</p>
+                      <p className="text-xs text-muted-foreground">Add a non-.edu email to keep access after graduation</p>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={() => linkEmail()}>
+                      Link email
+                    </Button>
+                  </div>
+                )}
+
+                {/* Option to add another email if none linked yet */}
+                {emails.length === 0 && (
+                  <div className="flex items-center justify-between rounded-lg border px-4 py-3">
+                    <div>
+                      <p className="text-sm font-medium">Email</p>
+                      <p className="text-xs text-muted-foreground">Not linked</p>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={() => linkEmail()}>
+                      Link email
+                    </Button>
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </CardContent>
       </Card>
 

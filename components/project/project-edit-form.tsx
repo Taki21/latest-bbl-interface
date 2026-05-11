@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { cn } from "@/lib/utils";
 import { Button }      from "@/components/ui/button";
 import { Input }       from "@/components/ui/input";
 import { Textarea }    from "@/components/ui/textarea";
@@ -148,6 +149,10 @@ export default function ProjectEditForm({
   const [newTagLabel, setNewTagLabel] = useState("");
   const [tagSubmitting, setTagSubmitting] = useState(false);
   const [memberSearch, setMemberSearch] = useState("");
+  const [supervisorOpen, setSupervisorOpen] = useState(false);
+  const [supervisorSearch, setSupervisorSearch] = useState("");
+  const [teamLeaderOpen, setTeamLeaderOpen] = useState(false);
+  const [teamLeaderSearch, setTeamLeaderSearch] = useState("");
 
   const actorAddress = callerAddress || address || "";
 
@@ -493,20 +498,35 @@ export default function ProjectEditForm({
         <div className="space-y-1">
           <label className="block text-sm font-medium">Supervisor</label>
           {isAdmin ? (
-            <Select value={supervisorId} onValueChange={(v) => setSupervisorId(v)}>
-              <SelectTrigger className="w-full">
-                <span className="truncate">
-                  {displayMember(supervisorId, supervisorLabelFallback, "Supervisor")}
-                </span>
-              </SelectTrigger>
-              <SelectContent>
-                {members.map((m) => (
-                  <SelectItem key={m.id} value={m.id}>
-                    {m.name || m.user.name || m.user.address}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={supervisorOpen} onOpenChange={(o) => { setSupervisorOpen(o); if (!o) setSupervisorSearch(""); }}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full justify-between font-normal">
+                  <span className="truncate">{displayMember(supervisorId, supervisorLabelFallback, "Supervisor")}</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="p-2 w-64">
+                <Input
+                  placeholder="Search members…"
+                  value={supervisorSearch}
+                  onChange={(e) => setSupervisorSearch(e.target.value)}
+                  className="mb-2 h-8 text-sm"
+                />
+                <div className="max-h-52 overflow-auto">
+                  {members
+                    .filter((m) => { const q = supervisorSearch.toLowerCase(); return !q || m.name?.toLowerCase().includes(q) || m.user.name?.toLowerCase().includes(q) || m.user.address?.toLowerCase().includes(q); })
+                    .map((m) => (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => { setSupervisorId(m.id); setSupervisorOpen(false); setSupervisorSearch(""); }}
+                        className={cn("w-full text-left rounded px-2 py-1.5 text-sm hover:bg-muted", supervisorId === m.id && "bg-muted font-medium")}
+                      >
+                        {m.name || m.user.name || m.user.address}
+                      </button>
+                    ))}
+                </div>
+              </PopoverContent>
+            </Popover>
           ) : (
             <Input
               value={displayMember(supervisorId, supervisorLabelFallback, "Supervisor")}
@@ -519,20 +539,35 @@ export default function ProjectEditForm({
         {/* Team Leader */}
         <div className="space-y-1">
           <label className="block text-sm font-medium">Team Leader</label>
-          <Select value={teamLeaderId} onValueChange={(v) => setTeamLeaderId(v)}>
-            <SelectTrigger className="w-full">
-              <span className="truncate">
-                {displayMember(teamLeaderId, teamLeaderLabelFallback, "Team Leader")}
-              </span>
-            </SelectTrigger>
-            <SelectContent>
-              {members.map((m) => (
-                <SelectItem key={m.id} value={m.id}>
-                  {m.name || m.user.name || m.user.address}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Popover open={teamLeaderOpen} onOpenChange={(o) => { setTeamLeaderOpen(o); if (!o) setTeamLeaderSearch(""); }}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-full justify-between font-normal">
+                <span className="truncate">{displayMember(teamLeaderId, teamLeaderLabelFallback, "Team Leader")}</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="p-2 w-64">
+              <Input
+                placeholder="Search members…"
+                value={teamLeaderSearch}
+                onChange={(e) => setTeamLeaderSearch(e.target.value)}
+                className="mb-2 h-8 text-sm"
+              />
+              <div className="max-h-52 overflow-auto">
+                {members
+                  .filter((m) => { const q = teamLeaderSearch.toLowerCase(); return !q || m.name?.toLowerCase().includes(q) || m.user.name?.toLowerCase().includes(q) || m.user.address?.toLowerCase().includes(q); })
+                  .map((m) => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => { setTeamLeaderId(m.id); setTeamLeaderOpen(false); setTeamLeaderSearch(""); }}
+                      className={cn("w-full text-left rounded px-2 py-1.5 text-sm hover:bg-muted", teamLeaderId === m.id && "bg-muted font-medium")}
+                    >
+                      {m.name || m.user.name || m.user.address}
+                    </button>
+                  ))}
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
 
         {/* Members Multi-Select */}

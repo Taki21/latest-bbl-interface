@@ -210,7 +210,7 @@ export default function CommunityAdminPage() {
                 <Input
                   value={fieldLabel}
                   onChange={(e) => setFieldLabel(e.target.value)}
-                  placeholder="e.g. Major"
+                  placeholder="e.g. Major or Expertise"
                   disabled={!isAdmin}
                 />
               </div>
@@ -219,7 +219,7 @@ export default function CommunityAdminPage() {
                 <Input
                   value={fieldCategory}
                   onChange={(e) => setFieldCategory(e.target.value)}
-                  placeholder="e.g. MAJOR"
+                  placeholder="e.g. MAJOR_EXPERTISE"
                   disabled={!isAdmin}
                 />
                 <p className="text-xs text-muted-foreground mt-1">

@@ -31,6 +31,7 @@ interface TaskFormProps {
   projectId: string;
   creatorAddress: string;
   onSuccess: () => void;
+  projectMembers?: { id: string; name?: string | null; user: { name: string | null; address: string } }[];
 }
 
 export default function TaskForm({
@@ -38,6 +39,7 @@ export default function TaskForm({
   projectId,
   creatorAddress,
   onSuccess,
+  projectMembers,
 }: TaskFormProps) {
   const router = useRouter();
   const { address } = useAccount();
@@ -59,8 +61,14 @@ export default function TaskForm({
   const [memberPopoverOpen, setMemberPopoverOpen] = useState(false);
   const [memberSearch, setMemberSearch] = useState("");
 
-  // load community members
+  // Seed member list immediately from project members so team leaders see options right away.
+  // Then fetch all community members and replace if the call succeeds.
   useEffect(() => {
+    if (projectMembers?.length) {
+      setMembers(
+        projectMembers.map((m) => ({ id: m.id, role: "Member", name: m.name, user: m.user }))
+      );
+    }
     fetch(`/api/community/${communityId}/members`)
       .then((r) => r.json())
       .then((data: any) => {
@@ -69,7 +77,7 @@ export default function TaskForm({
           : Array.isArray(data?.members)
           ? data.members
           : [];
-        setMembers(list);
+        if (list.length > 0) setMembers(list);
       })
       .catch(console.error);
   }, [communityId]);
