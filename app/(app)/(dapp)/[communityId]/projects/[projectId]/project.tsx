@@ -135,6 +135,11 @@ export default function ProjectPage() {
       const target = e.target as Element;
       if (panelRef.current?.contains(target)) return;
       if (target.closest("[data-kanban-card]")) return;
+      // Radix portals (dropdowns, popovers, dialogs) render outside the panel DOM
+      // subtree — don't close when clicking inside them
+      if (target.closest("[data-radix-popper-content-wrapper]")) return;
+      if (target.closest("[role='menu']")) return;
+      if (target.closest("[role='dialog']")) return;
       setSelected(null);
     };
     document.addEventListener("mousedown", handler);

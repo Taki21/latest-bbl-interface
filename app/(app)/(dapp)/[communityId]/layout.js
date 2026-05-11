@@ -40,6 +40,9 @@ export default function DappLayout({ children }) {
   const [profileIncomplete, setProfileIncomplete] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [eduBannerDismissed, setEduBannerDismissed] = useState(false);
+  const [semesterBannerDismissed, setSemesterBannerDismissed] = useState(
+    () => typeof window !== "undefined" && localStorage.getItem("semesterBanner2025Dismissed") === "true"
+  );
 
   const breadcrumbs = useMemo(() => {
     const labelMap = {
@@ -168,6 +171,32 @@ export default function DappLayout({ children }) {
             <WalletButton />
           </div>
         </header>
+        {!semesterBannerDismissed && (
+          <div className="px-4">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
+              <div className="flex-1">
+                <p className="font-medium">Heads up! The semester is ending</p>
+                <p className="text-xs text-amber-900/70 dark:text-amber-100/70">
+                  If you log in with a university (.edu) email and are graduating, head to{" "}
+                  <Link href={settingsHref} className="underline underline-offset-2 font-medium">
+                    Settings
+                  </Link>{" "}
+                  and link your personal email so you don&apos;t lose access to your account.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="text-xs text-amber-900/50 hover:text-amber-900 dark:text-amber-100/50 dark:hover:text-amber-100 shrink-0"
+                onClick={() => {
+                  localStorage.setItem("semesterBanner2025Dismissed", "true");
+                  setSemesterBannerDismissed(true);
+                }}
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        )}
         {showEduBanner && (
           <div className="px-4">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-100">

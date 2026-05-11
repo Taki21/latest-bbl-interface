@@ -51,6 +51,8 @@ export async function GET(
         OR: [
           { title: { contains: searchQuery, mode: "insensitive" } },
           { description: { contains: searchQuery, mode: "insensitive" } },
+          { teamLeader: { name: { contains: searchQuery, mode: "insensitive" } } },
+          { teamLeader: { user: { name: { contains: searchQuery, mode: "insensitive" } } } },
         ],
       });
     }

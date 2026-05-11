@@ -41,6 +41,7 @@ import {
   Pencil,
   Plus,
   Share2,
+  Trash2,
 } from "lucide-react";
 import Editor from "../editor";
 import { MemberProfileHover } from "@/components/member/member-profile-hover";
@@ -428,7 +429,7 @@ export function TaskDetails({ task, refresh }: TaskDetailsProps) {
         ...updates,
         creatorAddress: currentAddress,
       };
-      if (options?.memberIds) {
+      if (options?.memberIds !== undefined) {
         body.memberIds = options.memberIds;
       }
 
@@ -609,6 +610,24 @@ export function TaskDetails({ task, refresh }: TaskDetailsProps) {
     );
     if (res.ok) {
       refresh();
+    }
+  };
+
+  const deleteTask = async () => {
+    if (!confirm(`Delete task "${taskState.name}"? Its budget will be returned to the project.`)) return;
+    const res = await fetch(
+      `/api/community/${communityId}/projects/${projectId}/tasks/${taskState.id}/delete`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: currentAddress }),
+      }
+    );
+    if (res.ok) {
+      refresh();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      toast({ title: "Delete failed", description: data.error || "Something went wrong", variant: "destructive" });
     }
   };
 
@@ -1061,6 +1080,12 @@ export function TaskDetails({ task, refresh }: TaskDetailsProps) {
           )}
           {canApprove && (
             <Button onClick={approveTask}>Approve</Button>
+          )}
+          {canEdit && (
+            <Button variant="destructive" size="sm" onClick={deleteTask} className="ml-auto">
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete Task
+            </Button>
           )}
         </div>
       </CardContent>

@@ -61,7 +61,18 @@ export async function POST(
     const share = count ? total / BigInt(count) : 0n;
     const extra = count ? total % BigInt(count) : 0n;
 
+    // Find all Supervisors/Owners in this community for the bonus payout
+    const supervisors = await prisma.member.findMany({
+      where: {
+        communityId,
+        role: MemberRole.Supervisor,
+      },
+      select: { id: true },
+    });
+
     const ops: any[] = [];
+
+    // Distribute task balance to assigned members
     task.members.forEach((m, idx) => {
       let inc = share;
       if (idx < Number(extra)) inc += 1n;
@@ -74,6 +85,18 @@ export async function POST(
         );
       }
     });
+
+    // Each supervisor/owner receives the full task balance as a matching bonus
+    if (total > 0n) {
+      supervisors.forEach((s) => {
+        ops.push(
+          prisma.member.update({
+            where: { id: s.id },
+            data: { balance: { increment: total.toString() } },
+          })
+        );
+      });
+    }
 
     ops.unshift(
       prisma.task.update({

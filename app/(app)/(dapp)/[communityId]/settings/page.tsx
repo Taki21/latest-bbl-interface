@@ -356,7 +356,12 @@ export default function SettingsPage() {
                 const key = field.category || field.id;
                 const value = profileValues[key] ?? "";
                 const suggestions = field.values || [];
-                const label = field.label || formatCategoryLabel(field.category);
+                const rawLabel = field.label || formatCategoryLabel(field.category);
+                const LABEL_OVERRIDES: Record<string, string> = {
+                  "Major": "Major or Expertise",
+                  "Freshman": "Status",
+                };
+                const label = LABEL_OVERRIDES[rawLabel ?? ""] ?? rawLabel;
                 const isDesc = field.type === "DESC";
                 const words = value ? countWords(value) : 0;
                 return (
@@ -380,7 +385,7 @@ export default function SettingsPage() {
                       <Input
                         value={value}
                         onChange={(e) => handleValueChange(key, e.target.value)}
-                        placeholder={`Add your ${label?.toLowerCase()}`}
+                        placeholder={label ?? ""}
                       />
                     )}
                     {isDesc && (
